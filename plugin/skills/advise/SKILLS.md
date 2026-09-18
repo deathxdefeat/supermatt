@@ -4,7 +4,7 @@ The map `/supermatt:advise` routes over.
 
 ## The main path: idea → ship
 
-**`/supermatt:run <feature>`** does the whole thing and remembers where it is. The stages it drives can also be run by hand:
+**`/supermatt:run <feature>`** does the whole thing and remembers where it is. When the thinking already happened elsewhere (an audit, a plan, a spec or tickets), `--from spec|tickets|implement|verify` starts it at that stage so it still tracks progress. The stages it drives can also be run by hand:
 
 1. **`/supermatt:grill`** sharpens the idea by interview, writing `CONTEXT.md` terms and ADRs as they settle (`--no-docs` for a stateless interview, `--auto` to settle questions itself).
 2. **`/supermatt:spec`** turns the conversation into a spec on the tracker.

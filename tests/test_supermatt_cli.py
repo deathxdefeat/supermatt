@@ -266,6 +266,14 @@ class CliTest(unittest.TestCase):
         self.assertEqual(self.hook("stop").returncode, 0)
         self.assertEqual(self.run_cli("ticket", "01", "done").returncode, 1)  # still needs its review
 
+    def test_a_feature_can_start_at_a_later_stage(self):
+        self.init()
+        self.assertEqual(self.run_cli("start", "polish", "--stage", "spec").returncode, 0)
+        self.assertEqual((self.state()["feature"], self.state()["stage"]), ("polish", "spec"))
+        self.assertEqual(self.run_cli("start", "polish", "--stage", "done").returncode, 2)  # argparse refuses
+        self.run_cli("start", "other")
+        self.assertEqual(self.state()["stage"], "grill")
+
     def test_pause_at_none_and_base_branch(self):
         self.init()
         self.assertEqual(self.run_cli("config", "pipeline.pause_at", "none").returncode, 0)

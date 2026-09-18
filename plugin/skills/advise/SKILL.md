@@ -42,6 +42,7 @@ Name which of these it is (more than one can apply) and the evidence for it:
 | **Missing facts** | the answer is in docs, an API or old sessions | `/supermatt:research` |
 | **Incoming pile** | bug reports or requests you didn't write | `/supermatt:triage` |
 | **Mid-stream** | a feature in flight in `SM status` | `/supermatt:run` to resume |
+| **Already planned** | an audit, design doc, plan, spec or tickets exist from outside the pipeline | `/supermatt:run <feature> --from spec` (or `tickets` / `implement`), so the pipeline tracks it without grilling again |
 
 **The "repeatedly done but not working" pattern outranks the others.** It means nothing verifies the outcome the user actually cares about, so every agent can pass its own checks and still ship something broken. The plan must then begin by writing that outcome down as an end-to-end acceptance test (one real input, the exact expected output) inside the test command, with the `standard` preset, so no commit and no claim of done gets past it. Write that test as the first step of the fix's ticket: it stays red, uncommitted, while the diagnosis and fix proceed (red mid-ticket does not block a turn), and it is committed together with the fix once it passes. Then diagnose, then build.
 

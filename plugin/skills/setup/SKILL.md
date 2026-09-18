@@ -59,7 +59,7 @@ The defaults are the five canonical roles, each label string equal to its name: 
 
 Offer **multi-context** (a root `CONTEXT-MAP.md` pointing to per-context `CONTEXT.md` files) only when exploration found monorepo signals. Then confirm which layout they want.
 
-**Section D: Test command.** Propose the command you confirmed in exploration. It is what the enforcement rules and the `verify` stage run. If the repo has no tests yet, record none: the test rules then stay quiet until one is set with `supermatt config test_command "<cmd>"`.
+**Section D: Test command.** Propose the command you confirmed in exploration. Check that it tests the current source, not a stale artifact: an end-to-end suite that serves a production build (for example Playwright starting `next start`) needs the build step in the command (`npm run build && npm run test:e2e`). Time the confirming run: the command must finish within `test_timeout` (at most 570 seconds). It is what the enforcement rules and the `verify` stage run. If the repo has no tests yet, record none: the test rules then stay quiet until one is set with `supermatt config test_command "<cmd>"`.
 
 **Section E: Enforcement preset.** Ask one question, recommending **standard**:
 
@@ -77,11 +77,13 @@ Offer **multi-context** (a root `CONTEXT-MAP.md` pointing to per-context `CONTEX
 
 Any single rule can be changed later: `supermatt config enforce.<rule> off|warn|block`.
 
+When the confirming run was slow (a build plus an end-to-end suite, say over a minute), recommend `green_before_stop` off: it runs the command at the end of every turn that changed code, even at `warn`. `tests_before_commit` at `block` is then the gate that matters.
+
 **Section F: Pipeline options.** Show the defaults and ask whether to keep them (recommended: **yes**):
 
 - `pipeline.interview`: `full` (the grilling waits for the user's answers) or `auto` (it settles every question with its recommended answer and records them as assumed decisions in the spec)
 - `pipeline.pause_at`: stages `/supermatt:run` pauses *before*, waiting for the user's go-ahead. Default `implement,finish`: check the spec and tickets before code is written, and the verify evidence before anything is merged. Stages: `grill`, `spec`, `tickets`, `implement`, `verify`, `finish`; `none` never pauses.
-- `pipeline.branch`: create a `<feature-slug>` branch before implementing (default `true`)
+- `pipeline.branch`: create a `<feature-slug>` branch before implementing (default `true`; set `false` for teams that commit straight to the main branch)
 - `pipeline.worktree`: implement in an isolated worktree via `/supermatt:worktree` (default `false`)
 - `pipeline.ticket_agents`: build each ticket in a fresh subagent instead of this context (default `false`)
 - `pipeline.finish`: `ask` (show the merge / PR / keep menu), or always `merge`, `pr` or `keep`

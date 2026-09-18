@@ -328,9 +328,9 @@ def cmd_start(args, root):
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", args.feature):
         raise UsageError("feature slug must be lowercase letters, digits and hyphens")
     state = load_state(root)
-    state.update(feature=args.feature, stage=STAGES[0], base=None, ticket=None, tickets={}, stop_blocks=0)
+    state.update(feature=args.feature, stage=args.stage, base=None, ticket=None, tickets={}, stop_blocks=0)
     save_state(root, state)
-    print(f"feature {args.feature}: stage {STAGES[0]}")
+    print(f"feature {args.feature}: stage {args.stage}")
 
 
 def cmd_stage(args, root):
@@ -591,6 +591,8 @@ def main(argv=None):
     p.add_argument("branch")
     p = sub.add_parser("start", help="start a feature in the pipeline")
     p.add_argument("feature")
+    p.add_argument("--stage", choices=STAGES[:-1], default=STAGES[0],
+                   help="the stage to start at, when earlier stages were done outside the pipeline")
     p = sub.add_parser("stage", help="record the pipeline stage")
     p.add_argument("stage", choices=STAGES)
     p = sub.add_parser("ticket", help="record a ticket's state")

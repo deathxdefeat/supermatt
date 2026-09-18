@@ -1,7 +1,7 @@
 ---
 name: run
 description: Drive a feature from idea to shipped through the whole supermatt pipeline (grill, spec, tickets, implement with TDD and review per ticket, verify, finish), resuming wherever it left off. Use when the user runs /supermatt:run, asks to take a feature end to end, or asks to resume the pipeline.
-argument-hint: "[<feature description> | resume] [--auto | --guided]"
+argument-hint: "[<feature description> | resume] [--from spec|tickets|implement|verify] [--auto | --guided]"
 disable-model-invocation: true
 ---
 
@@ -17,8 +17,15 @@ Run `SM status --json`.
 
 - **`configured` is false** → call the Skill tool with "supermatt:setup" first, then come back here.
 - **`trusted` is false** → the repo's config came from elsewhere (a clone or a pull). Show the user its `test_command` and ask them to approve it; on a yes, run `SM trust`. Without trust the enforcement hooks stay off.
-- **Arguments name a new feature** → pick a short kebab-case slug for it and run `SM start <slug>`. If another feature is in flight and not `done`, say which one and ask whether to abandon it or resume it instead.
+- **Arguments name a new feature** → pick a short kebab-case slug for it and run `SM start <slug>` (with `--stage <stage>` when `--from` is given; see below). If another feature is in flight and not `done`, say which one and ask whether to abandon it or resume it instead.
 - **No arguments, or `resume`** → continue the active feature at its recorded stage. With no active feature, ask what to build.
+
+**Starting later with `--from`.** When the earlier stages already happened outside the pipeline (an audit, a design doc, a plan made in this conversation, an existing spec or tickets), start the feature at a later stage instead of grilling again: `SM start <slug> --stage <stage>`, then continue from that stage below. What each start point expects:
+
+- `--from spec`: the design is already settled in this conversation or in a document the user names. The spec stage synthesises from that; any open question it can't answer from the material goes to the user before the spec is published.
+- `--from tickets`: a spec already exists. Get its path or URL from the user if they didn't give it, and pass it to the tickets stage.
+- `--from implement`: tickets already exist on the tracker. Read them first; any ticket without acceptance criteria or seams under test gets them added (with the user's OK on a hosted tracker) before the ticket loop starts.
+- `--from verify`: the work is built and needs verifying against its spec before finishing.
 
 **Effective mode.** Start from `config.pipeline`; flags on this invocation override it for this run only:
 
@@ -27,7 +34,7 @@ Run `SM status --json`.
 
 **Pausing.** `pause_at` lists stages to pause *before*. Before starting a listed stage, stop: summarise what the previous stage produced in a few lines, name the next stage, and wait for the user's go-ahead. The default, `implement,finish`, lets the user check the spec and tickets before any code is written, and check the verify evidence before anything is merged.
 
-Record each stage with `SM stage <stage>` as you start it.
+Never pause before the stage this invocation starts or resumes at: the user just asked for it. Record each stage with `SM stage <stage>` as you start it.
 
 **Ticket ids.** A ticket's id is its local file number (`01`, `02`, ...) or its issue number on a hosted tracker (`123`, no `#`). Use the same id with every `SM ticket` call.
 

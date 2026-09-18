@@ -1,100 +1,231 @@
 # supermatt
 
-A Claude Code plugin that takes a feature from rough idea to shipped code as one workflow. It includes:
+supermatt is a Claude Code plugin that takes each feature through one fixed, resumable process. Claude agrees the design with you, writes a spec, splits it into small tickets, builds each ticket test-first, has it reviewed and checks the result against the spec. Then it merges the work or opens a pull request.
 
-- **A pipeline you can resume.** `/supermatt:run <feature>` goes through grill → spec → tickets → implement → verify → finish. Each ticket is built test-first, committed, then reviewed. The pipeline records where it is, so you can `/clear`, compact, or come back tomorrow and carry on.
-- **A merged skill set.** 20 skills under `/supermatt:*`, adapted from [mattpocock/skills](https://github.com/mattpocock/skills) and [obra/superpowers](https://github.com/obra/superpowers). Upstream skills that overlapped are merged into one, and the skills call each other by their supermatt names.
-- **Optional guardrails.** Hooks can stop a commit that fails the tests, a code edit with no ticket in progress, a new ticket started before the last one is reviewed, and a turn that ends with failing code. You choose, for each repo, whether each rule blocks, warns, or is off.
-- **An advisor.** Describe your situation to `/supermatt:advise` and get back a step-by-step plan.
+**Why it exists.** [Matt Pocock's engineering skills](https://github.com/mattpocock/skills) and [obra/superpowers](https://github.com/obra/superpowers) are good but separate. Nothing ties them into one flow, nothing remembers where a feature stands when a session ends, and nothing stops Claude calling work done while the tests fail or before it has been reviewed. supermatt adapts them into one set of skills, runs them as a pipeline that saves its place in your repo, and adds optional guardrails that check the work before Claude commits or hands control back to you.
 
-## Requirements
-
-- Claude Code with plugin support
-- `python3` 3.9 or newer on `PATH`, standard library only
-- `git`
-- macOS or Linux
-
-## Install
-
-From a clone of this repo:
-
-```bash
-claude plugin marketplace add /path/to/supermatt
-```
-
-```bash
-claude plugin install supermatt@supermatt
-```
-
-If the repo is hosted somewhere, `claude plugin marketplace add <git-url>` works the same way. Restart Claude Code, or run `/reload-plugins`, and check that `claude plugin list` shows `supermatt@supermatt` as enabled.
-
-**While developing supermatt itself**, link the plugin folder into your skills directory instead. Claude Code then loads it in place as `supermatt@skills-dir`, and your edits apply to the next session:
-
-```bash
-ln -s /path/to/supermatt/plugin ~/.claude/skills/supermatt
-```
-
-Uninstall with `claude plugin uninstall supermatt@supermatt` (or delete the link). Repos you set up keep their `.supermatt/` folder. The hooks ignore it once the plugin is gone.
-
-## Quick start
+**The intended outcome.** You describe a feature, or a problem, and get working, tested, reviewed code through a process you can repeat. "Done" means your test command passes and every spec requirement has been checked, not that Claude says so.
 
 ```text
 /supermatt:run add CSV export to the reports page
 ```
 
-The first run in a repo starts `/supermatt:setup`. It asks five things:
+| | Claude Code on its own | With supermatt |
+|---|---|---|
+| Design | Depends on how you prompt | Claude asks you questions until the design is settled, then writes it down |
+| Tests | Depends on how you prompt | Claude writes a failing test before each piece of code |
+| "Done" | Claude says so | Your test command passes, each ticket is reviewed, every spec requirement is checked |
+| After `/clear` or in a new session | No record of where the feature stands | Resumes at the recorded stage |
+| Your say | Whenever you interrupt | Two pauses by default: before any code is written, and before anything is merged |
 
-- where issues live (GitHub, GitLab, local markdown, or something else)
-- which test command to run
-- how strict the guardrails should be
-- how the pipeline should behave
-- whether to keep the default triage labels
+**What a finished run leaves you.** The feature's commits, each made after your test command passed (with a test command set and the default preset). The spec and a set of closed tickets in your tracker; with the local tracker these are `.scratch/<feature>/spec.md` and `.scratch/<feature>/issues/01-<slug>.md` onwards. Any new glossary terms in `CONTEXT.md` and decisions in `docs/adr/`. A verify report, shown at the second pause, that lists each spec requirement with the evidence that it is met. The commits end up merged into the branch you started from, in a pull request, or kept on their own branch, whichever you choose.
 
-The pipeline starts once setup is done. Run `/supermatt:run` with no arguments to resume. Flags apply to one run only: `--auto` answers the grilling questions itself and doesn't pause; `--guided` pauses before every stage.
+The evidence is only as strong as your test command (see [Limits](#limits)). For a small fix you don't need the whole pipeline: call one skill such as `/supermatt:debug` or `/supermatt:implement`, or ask `/supermatt:advise` where to start.
 
-Not sure where to start? Paste the problem and run `/supermatt:advise`. It checks the repo, works out what kind of situation you're in, and gives you a numbered plan that ends with the first command to type.
+**Contents:** [How it works](#how-it-works) · [Install](#install) · [Quick start](#quick-start) · [The advisor](#not-sure-where-to-start-ask-the-advisor) · [Skills](#skills) · [Options and guardrails](#options-and-guardrails) · [Trust, safety and limits](#trust-safety-and-limits) · [Troubleshooting](#troubleshooting) · [The supermatt command](#the-supermatt-command) · [Develop](#develop) · [Credits and licence](#credits-and-licence)
+
+## How it works
+
+`/supermatt:run` takes a feature through six stages, each run by the skill of the same name, and the implement stage also calls `/supermatt:review` after each ticket.
+
+```mermaid
+flowchart TD
+    idea(["You describe a feature"]) --> plan
+    subgraph plan ["Plan"]
+        direction LR
+        grill["grill: agree the design"] --> spec["spec: write it down"] --> tickets["tickets: slice the work"]
+    end
+    plan --> pause1{{"Pause: you read the spec and tickets"}}
+    pause1 --> build_loop
+    subgraph build_loop ["implement: repeat for each ticket"]
+        direction LR
+        build["failing test, then code"] --> commit["commit"] --> review["review and fix"]
+    end
+    build_loop --> verify["verify: check every requirement"]
+    verify -->|"gap found, add a ticket"| build_loop
+    verify --> pause2{{"Pause: you check the evidence"}}
+    pause2 --> finish["finish: merge, pull request or keep the branch"]
+```
+
+*The pipeline `/supermatt:run` drives. The hexagons are the two default pauses, where Claude summarises the last stage and waits for your go-ahead. Both pauses are [options](#pipeline-and-other-options).*
+
+| Stage | What happens |
+|---|---|
+| **grill** | Claude questions you in rounds ("grilling"). Each round is a numbered set of questions, each with a recommended answer, and rounds continue until the design is settled. New terms go into `CONTEXT.md` (the project glossary) and hard-to-reverse decisions into `docs/adr/` as ADRs (short architecture decision records). |
+| **spec** | The conversation becomes a written spec in your issue tracker. It names the seams under test (the public interfaces the tests will drive, never internals) and any decisions that were assumed rather than asked. |
+| **tickets** | The spec is split into tracer-bullet tickets: thin slices that each work end to end through every layer, so each one can be checked on its own. Each ticket lists the tickets that must finish before it. |
+| **implement** | One ticket at a time, Claude writes a failing test, writes just enough code to pass it, repeats until the ticket is covered, and commits. It then hands the change to two reviewer sub-agents, which run in parallel, each with a fresh context. One checks your coding standards (files such as `CONTRIBUTING.md` or `CODING_STANDARDS.md`, plus a built-in list of common code smells that applies even if you have none), the other checks the ticket's requirements. Claude then fixes what they find. |
+| **verify** | Every requirement in the spec is checked against fresh evidence: a command run now, its output read. Each gap becomes a new ticket and goes back through implement. |
+| **finish** | The full test suite runs, then the work is merged into the branch it started from, opened as a pull request, or kept on its branch. |
+
+The reviewers are still Claude, so treat the review as a second reading, not an independent audit. The hard evidence is your test command passing and the requirement-by-requirement check against the spec, which you see at the second pause.
+
+`run` records each stage as it starts it. After `/clear`, automatic context compaction or a new session, `/supermatt:run` resumes at that stage. Anything already written down (the spec, the tickets, commits, `CONTEXT.md`, ADRs) carries over. A conversation still in progress inside a stage, such as unfinished grilling, does not, so finish the planning stages in one sitting when you can.
+
+## Install
+
+You need Claude Code with the `claude plugin` command (check with `claude plugin --help`), `python3` 3.9 or newer on `PATH` (standard library only), `git`, and macOS or Linux. If your issues live on GitHub or GitLab, you also need the `gh` or `glab` CLI, signed in. Your repo should have a test command: without one, the two test guardrails do nothing and verify has less evidence to work from.
+
+> [!NOTE]
+> The GitHub repository `deathxdefeat/supermatt` is private for now. Installing from it, or cloning it, needs a GitHub account with read access to it and git credentials (for example from `gh auth login`) that can reach it.
+
+```bash
+claude plugin marketplace add deathxdefeat/supermatt
+claude plugin install supermatt@supermatt
+```
+
+Restart Claude Code, or run `/reload-plugins`, and check that `claude plugin list` shows `supermatt@supermatt` as enabled. Its hooks do nothing in a repo until you set that repo up, so it is safe to leave enabled everywhere.
+
+To uninstall, run `claude plugin uninstall supermatt@supermatt`. Repos you set up keep their `.supermatt/` folder; with the plugin gone, nothing reads it. To work on supermatt itself, see [Develop](#develop).
+
+## Quick start
+
+Open Claude Code in a git repo and start a feature:
+
+```text
+/supermatt:run add CSV export to the reports page
+```
+
+1. **Setup, first time only.** The first run in a repo starts `/supermatt:setup`. It looks around the repo, then asks five things, one at a time, each with a recommended answer you can accept in a word:
+   - where issues live: GitHub, GitLab, local markdown files, or something else you describe
+   - whether to keep the default triage labels (the labels used to sort incoming issues)
+   - which test command to run (it runs the candidate once to check it works)
+   - how strict the guardrails should be (a [preset](#presets))
+   - how the pipeline should behave: when to pause, whether to branch, how to finish
+
+   It shows you drafts of everything it will write before writing it.
+2. **Repo already set up by a teammate?** Setup is skipped. `/supermatt:run` shows you the committed config's `test_command` and asks you to approve it on this machine, because the hooks will run that command. Until you approve it, each session starts with "supermatt is off in this repo". See [Trust](#trust-safety-and-limits).
+3. **The pipeline runs** through the stages in [How it works](#how-it-works). At the first pause, read the spec and tickets. At the second, check the verify evidence, then choose merge, pull request or keep the branch.
+
+Come back any time: `/supermatt:run` with no arguments resumes the feature at its recorded stage, and each new session (and each `/clear` or compaction) tells Claude which feature is in flight.
+
+Flags change a single run:
+
+| Flag | Effect |
+|---|---|
+| (no flag) | Uses this repo's options. By default, Claude waits for your answers during grilling and pauses before `implement` and `finish`. |
+| `--auto` | Claude answers its own grilling questions with the recommended answers, lists them as assumptions in the spec, and does not pause. It still stops for the finish menu, unless the repo is set to always merge, always open a PR or always keep the branch (`pipeline.finish`). |
+| `--guided` | Claude waits for your answers during grilling and pauses before every stage. |
+| `--from spec\|tickets\|implement\|verify` | Starts a new feature at a later stage when the earlier work already exists (a settled design, a spec, tickets or built code), so the pipeline still tracks it without grilling you again. |
+
+### What supermatt adds to your repo
+
+| Path | Commit it? | What it holds |
+|---|---|---|
+| `.supermatt/config.json` | Yes, before any worktree is created, so worktrees see it | This repo's options: test command, guardrail levels, pipeline behaviour. Each teammate approves it on their own machine, and again after any change they pull, before its hooks run (see [Trust](#trust-safety-and-limits)). |
+| `.supermatt/state.json` | No, setup gitignores it | The pipeline's progress on this machine |
+| `docs/agents/issue-tracker.md`, `triage-labels.md`, `domain.md` | Yes | Where issues live, the label names, and where the domain docs live. Edit them freely. |
+| An `## Agent skills` section in `CLAUDE.md` or `AGENTS.md` | Yes | Points agents at the three files above. Setup edits whichever file exists, and asks if neither does. |
+| `CONTEXT.md`, `docs/adr/` | Yes | Glossary terms and design decisions, kept up to date during grilling |
+| `.scratch/<feature>/` | Your choice | Only with the local markdown tracker: `spec.md` and one `issues/NN-<slug>.md` per ticket |
+
+## Not sure where to start? Ask the advisor
+
+Describe your situation in your own words:
+
+```text
+/supermatt:advise the export has been "fixed" three times and still writes an empty file
+```
+
+`/supermatt:advise` reads what you wrote, then checks the repo itself: the pipeline status, recent commits, open specs and tickets, `CONTEXT.md` and ADRs, and the tests (it runs them once if that is cheap). It makes no edits, commits or stage changes. Its answer has four parts:
+
+1. **What this is**: the kind of situation, with the evidence, including anything the repo showed that you did not mention.
+2. **The plan**: numbered steps, each with the exact command, why it comes at that point, and what finished looks like.
+3. **What to watch for**: the one or two ways the plan is most likely to go wrong.
+4. **Start here**: the first command to type.
+
+Tell it to go and it starts step 1 itself. The exceptions are the four skills only you can start (`run`, `triage`, `wayfinder` and `handoff`): for those, it tells you what to type.
+
+| Situation | Starts with |
+|---|---|
+| A feature you can describe in a few sentences | `/supermatt:run <feature>` |
+| An idea where you can't yet say what done looks like | `/supermatt:grill`, then `/supermatt:run` |
+| A plan, spec or tickets that already exist from outside the pipeline | `/supermatt:run <feature> --from <stage>` |
+| Work too big for one session | `/supermatt:wayfinder` |
+| Something that should work but doesn't | `/supermatt:debug` |
+| Work that keeps being called done but still doesn't work | An end-to-end acceptance test first, then diagnosis |
+| A design that fights every change | `/supermatt:architecture` |
+| A question only running code can settle | `/supermatt:prototype` |
+| Facts you need from docs or APIs | `/supermatt:research` |
+| A pile of incoming issues | `/supermatt:triage` |
+| A feature already in flight | `/supermatt:run` to resume |
+
+If the "keeps being called done" row applies together with another one, the advisor deals with it first. It means nothing checks the outcome you actually care about, so every step can pass its own checks and still ship something broken. The plan starts by writing that outcome as one end-to-end acceptance test (a real input and the exact expected output) and adding it to your test command. Under the `standard` preset, Claude then can't commit while that test fails.
 
 ## Skills
 
+All 20 skills are invoked as `/supermatt:<name>`. Where skills from the two source collections (Matt Pocock's and obra/superpowers) overlapped, they were merged into one, and the skills call each other by these names. Claude also starts a skill by itself when your request fits, except the four marked *(you type it)*.
+
+**Driving the workflow**
+
 | Skill | What it does |
 |---|---|
-| `/supermatt:run` | Runs a feature through every stage and resumes where it stopped |
+| `/supermatt:run` *(you type it)* | Takes a feature through every stage and resumes where it stopped |
 | `/supermatt:advise` | Reads your situation and the repo, then lays out which skills to run, in what order, and why |
-| `/supermatt:setup` | Sets a repo up once: issue tracker, labels, domain docs, test command, options |
-| `/supermatt:status` | Shows the pipeline's progress and changes any option |
-| `/supermatt:grill` | Questions you in rounds until the design is clear, writing `CONTEXT.md` terms and ADRs as they're decided |
-| `/supermatt:spec` | Turns the conversation into a spec in your issue tracker |
-| `/supermatt:tickets` | Splits a spec into small end-to-end tickets that each list what blocks them |
-| `/supermatt:implement` | Builds a ticket test-first, commits it, and hands it to review |
+| `/supermatt:setup` | Sets a repo up once: issue tracker, labels, domain docs, test command, options. `run` starts it for you when a repo isn't set up. |
+| `/supermatt:status` | Shows the pipeline's progress, the options, and whether this machine has approved the config ([trust](#trust-safety-and-limits)). Changes options when you ask. |
+
+**Pipeline stages** (`run` calls these; each also works on its own)
+
+| Skill | What it does |
+|---|---|
+| `/supermatt:grill` | Questions you in rounds until the design is clear, writing `CONTEXT.md` terms and ADRs as they are decided |
+| `/supermatt:spec` | Turns the conversation into a spec in your issue tracker, without a new interview |
+| `/supermatt:tickets` | Splits a spec into tracer-bullet tickets, each listing what blocks it |
+| `/supermatt:implement` | Builds a ticket, a spec or a described behaviour test-first, commits it, and hands it to review |
 | `/supermatt:review` | Reviews against your coding standards and against the spec, in parallel, then fixes the findings and closes the ticket |
 | `/supermatt:verify` | Requires fresh evidence before anything is called done |
-| `/supermatt:finish` | Merges, opens a pull request, or keeps the branch |
-| `/supermatt:debug` | Diagnoses hard bugs: first a command that reproduces the failure, then a fix with a regression test |
-| `/supermatt:merge` | Resolves an in-progress merge or rebase by what each side meant to do |
-| `/supermatt:triage` | Sorts incoming issues and writes briefs an agent can work from |
-| `/supermatt:prototype` | Builds throwaway code to settle a design question |
-| `/supermatt:research` | Sends a background agent to primary sources and saves a cited Markdown file |
-| `/supermatt:architecture` | Helps design modules and finds places where a module should do more behind a smaller interface |
-| `/supermatt:wayfinder` | Breaks a large, unclear effort into decision tickets and resolves them one at a time |
-| `/supermatt:worktree` | Sets up an isolated workspace for feature work |
-| `/supermatt:handoff` | Writes a handoff document for a fresh session |
+| `/supermatt:finish` | Runs the full test suite, then merges, opens a pull request, or keeps the branch |
 
-`run`, `setup`, `triage`, `wayfinder` and `handoff` run only when you call them. Claude can pick the others on its own when your request matches.
+**On demand**
 
-## Options
-
-Each repo keeps its own options in `.supermatt/config.json`, which you commit. You can change them by asking `/supermatt:status` (for example "turn ticket_before_code off" or "use the strict preset"), or run the `supermatt config` command bundled in `plugin/bin`.
-
-### Guardrails
-
-| Rule | What it does |
+| Skill | What it does |
 |---|---|
-| `tests_before_commit` | `git commit` runs the test command first. Failing tests stop the commit. |
-| `ticket_before_code` | Editing code (anything not matched by `exempt`) needs a ticket that is in progress or in review. |
-| `review_after_ticket` | A committed ticket must be reviewed before the next one starts or the turn ends. |
-| `green_before_stop` | A turn can't end while uncommitted code fails the tests. The exception is mid-ticket, where failing tests are a normal part of test-first work. After three blocked attempts in a row it lets the turn end and warns you. |
+| `/supermatt:debug` | Diagnoses hard bugs and slowdowns: first a command that reproduces the failure, then a fix with a regression test |
+| `/supermatt:merge` | Resolves a stopped merge, rebase or cherry-pick by what each side meant to do |
+| `/supermatt:triage` *(you type it)* | Sorts incoming issues and writes briefs an agent can work from |
+| `/supermatt:prototype` | Builds throwaway code to settle one design question |
+| `/supermatt:research` | Sends a background agent to primary sources and saves a cited Markdown file |
+| `/supermatt:architecture` | Helps design modules, and finds places where a module should do more behind a smaller interface |
+| `/supermatt:wayfinder` *(you type it)* | Breaks a large, unclear effort into decision tickets and resolves them one at a time |
+| `/supermatt:worktree` | Sets up an isolated workspace, such as a separate git worktree, for feature work |
+| `/supermatt:handoff` *(you type it)* | Writes a handoff document so a fresh session can pick up the work |
 
-Each rule is `off`, `warn` or `block`. A preset sets all four at once:
+## Options and guardrails
+
+Guardrails are four rules, enforced by Claude Code hooks and the `supermatt` command, that can stop Claude committing with failing tests (`tests_before_commit`), editing code with no ticket open (`ticket_before_code`), moving on before a finished ticket is reviewed (`review_after_ticket`), or ending its turn with failing changes (`green_before_stop`). Each rule is `off`, `warn` (the action goes ahead with a warning) or `block` (the action is stopped and Claude is told why). A preset sets all four at once.
+
+Each repo keeps its options in `.supermatt/config.json`, which you commit so the whole team shares them. To change one, ask `/supermatt:status` in plain words ("turn ticket_before_code off", "use the strict preset", "pause before every stage"), or have Claude run [`supermatt config`](#the-supermatt-command).
+
+### Ticket states
+
+The guardrails work from each ticket's state, which the skills record as they go.
+
+```mermaid
+flowchart LR
+    start(["ticket starts"]) --> impl["implementing"]
+    impl -->|"work committed"| rev["needs-review"]
+    rev -->|"review fixes its findings"| fin(["done"])
+    impl -->|"Claude asks you something"| blk["blocked"]
+    rev -->|"Claude asks you something"| blk
+    blk -.->|"you answer"| impl
+    blk -.->|"you answer"| rev
+```
+
+*The state supermatt records for each ticket. `blocked` means Claude is waiting on you; once you answer, the ticket returns to whichever state it came from.*
+
+A ticket's id is its local file number (`01`) or its issue number on a hosted tracker (`123`).
+
+### The four rules
+
+| Rule | Checked when | What it enforces |
+|---|---|---|
+| `tests_before_commit` | Claude runs `git commit` through its Bash tool | The test command runs first. If it fails, the commit is stopped (at `warn`, it goes ahead with a warning), and Claude sees the last 30 lines of output. A pass shows nothing. Does nothing without a `test_command`. |
+| `ticket_before_code` | Claude edits a file with Edit, Write, MultiEdit or NotebookEdit | The current ticket must be `implementing` or `needs-review`. Files outside the repo, and paths matching `exempt`, are ignored. |
+| `review_after_ticket` | A ticket is started or marked done, and when Claude tries to end its turn | While a committed ticket waits in `needs-review`, no other ticket can start and the turn cannot end. A ticket still `implementing` or `blocked` cannot be marked `done`: it goes through review first. A `blocked` current ticket lets the turn end. |
+| `green_before_stop` | Claude tries to end its turn | Uncommitted changes to non-exempt files must pass the tests. Skipped while the current ticket is `implementing` (failing tests are a normal step in test-first work) or `blocked`, and when those changes already passed. Does nothing without a `test_command`. |
+
+### Presets
 
 | Preset | tests_before_commit | ticket_before_code | review_after_ticket | green_before_stop |
 |---|---|---|---|---|
@@ -103,63 +234,175 @@ Each rule is `off`, `warn` or `block`. A preset sets all four at once:
 | `light` | warn | warn | warn | warn |
 | `off` | off | off | off | off |
 
+`standard` suits most repos. Choose `strict` when every code edit, including debugging and prototypes, should need a ticket first. If your test command is slow (a build plus an end-to-end suite, say), consider turning `green_before_stop` off: it runs the tests at the end of every turn that changed code, even at `warn`, and `tests_before_commit` at `block` remains the gate that matters.
+
+### The end-of-turn check
+
+This is the check that stops Claude from ending a turn with work unfinished.
+
+```mermaid
+flowchart TD
+    stop(["Claude tries to end its turn"]) --> q1("Is the current ticket blocked on a question for you?")
+    q1 -->|yes| ends(["Turn ends"])
+    q1 -->|no| q2("Is a committed ticket waiting for review?")
+    q2 -->|no| q3("Is the current ticket still implementing?")
+    q3 -->|yes| ends
+    q3 -->|no| q4("Do uncommitted changes fail the tests?")
+    q4 -->|no| ends
+    q2 -->|yes| q5
+    q4 -->|yes| q5("Has it blocked three times in a row?")
+    q5 -->|no| held(["Turn blocked: Claude is told why and keeps working"])
+    q5 -->|yes| warned(["Turn ends with a warning to you"])
+```
+
+*Shown with `review_after_ticket` and `green_before_stop` at `block`. At `warn`, the turn ends with a warning to you instead of being blocked.*
+
+Once a set of changes passes, the check does not rerun the tests until the code changes again.
+
 ### Pipeline and other options
 
 | Option | Default | Meaning |
 |---|---|---|
 | `test_command` | none | The command the guardrails and the verify stage run. Without one, the two test rules do nothing. |
-| `test_timeout` | `300` | Seconds before a test run counts as failed (at most 570, because Claude Code stops a hook after 600) |
+| `test_timeout` | `300` | Seconds before a test run counts as failed. At most 570, because Claude Code stops the commit and end-of-turn hooks after 600. |
 | `exempt` | `.scratch/*`, `docs/*`, `.supermatt/*`, `*.md` | Paths the code rules ignore |
 | `pipeline.interview` | `full` | `full` waits for your answers during grilling. `auto` answers each question with the recommended answer and lists these as assumptions in the spec. |
-| `pipeline.pause_at` | `implement,finish` | The stages `run` pauses before, waiting for your go-ahead. The default lets you check the spec and tickets before any code is written, and the verify results before anything is merged. `none` never pauses. |
-| `pipeline.branch` | `true` | Create a branch for the feature before implementing |
-| `pipeline.worktree` | `false` | Implement in an isolated worktree instead |
-| `pipeline.ticket_agents` | `false` | Build each ticket in a fresh subagent |
+| `pipeline.pause_at` | `implement,finish` | The stages `run` pauses *before*, waiting for your go-ahead: any of `grill`, `spec`, `tickets`, `implement`, `verify`, `finish`. `none` never pauses. |
+| `pipeline.branch` | `true` | Create a branch named after the feature before implementing |
+| `pipeline.worktree` | `false` | Implement in an isolated worktree instead, through `/supermatt:worktree` |
+| `pipeline.ticket_agents` | `false` | Build each ticket in a fresh subagent. The pipeline then checks `supermatt status` and `git log` itself before the next ticket, because a subagent's report is not evidence. That subagent runs both reviews itself, one after the other. |
 | `pipeline.finish` | `ask` | `ask` shows a menu. `merge`, `pr` or `keep` always does that one. |
 
-## How the guardrails work, and their limits
+The equivalent commands:
 
-- **Setup is per repo.** Without `.supermatt/config.json`, every hook exits straight away and does nothing.
-- **Configs need your approval.** The config names a command that the hooks run on their own, so supermatt acts on it only once this machine trusts it. `supermatt init` trusts the config it writes, and `supermatt config` keeps a trusted config trusted after an edit. A config that arrives any other way (a clone, a pull, a teammate's edit) stays inactive until you review it and run `supermatt trust`. Trust records the repo's path and the config's exact contents, so any change to the config needs approving again. Trusted configs are listed in `~/.config/supermatt/trusted.json`, or at `$SUPERMATT_TRUST_FILE` if set. Each new session tells you when a repo's config is waiting for approval.
-- **Test runs are remembered.** Once a set of changes passes, the end-of-turn check doesn't rerun the tests until the code changes again.
-- **They are guardrails, not a sandbox.** `ticket_before_code` watches Claude's file-editing tools, not every shell command that could write a file. Tests run on the working tree, not just the staged changes.
-- **Questions still get through.** Before Claude asks you something mid-ticket, it marks the ticket `blocked`, so the end-of-turn checks let the question through.
-- **The hooks never break a session.** Bad hook input, a broken config or a bug inside supermatt all result in a message, never a failed tool call. A broken config turns supermatt off for that repo, and the next session tells you why.
+```bash
+supermatt config                                   # show every option
+supermatt config preset strict                     # set all four rules
+supermatt config enforce.ticket_before_code off    # set one rule
+supermatt config pipeline.pause_at spec,implement,finish
+supermatt config pipeline.pause_at none            # never pause
+supermatt config test_command "npm test"
+```
 
-The pipeline's progress lives in `.supermatt/state.json`, which is kept out of git because it's local to your machine.
+## Trust, safety and limits
 
-## The `supermatt` command
+The config names a command that the hooks run on their own, so supermatt acts on a repo's config only after this machine has approved it. Without that check, cloning a repo could make Claude Code run any command the repo's author chose, the next time Claude commits or ends a turn.
 
-The skills and hooks work through `plugin/bin/supermatt`, a single Python script. When the plugin is enabled, it's on the `PATH` of Claude's Bash tool. You can also run it yourself with `python3 plugin/bin/supermatt`.
+```mermaid
+flowchart LR
+    init["supermatt init writes the config"] --> trusted(["Trusted: hooks enforce the rules"])
+    arrive["A config arrives by clone or pull"] --> untrusted(["Untrusted: hooks stay off"])
+    trusted -->|"edited other than by supermatt config"| untrusted
+    untrusted -->|"you review it and run supermatt trust"| trusted
+```
 
-| Command | What it does |
-|---|---|
-| `init [--preset P] [--test-command CMD]` | Sets the repo up: writes and trusts `.supermatt/config.json`, and gitignores the state file |
-| `status [--json]` | Shows the pipeline's progress, the options, and whether the config is trusted |
-| `config [KEY [VALUE]]` / `config preset P` | Shows or changes an option |
-| `trust` | Approves this repo's current config on this machine |
-| `start SLUG`, `stage STAGE`, `base BRANCH` | Record the feature, the stage and the branch it started from |
-| `ticket ID implementing\|blocked\|needs-review\|done` | Records a ticket's state (review comes before `done`) |
-| `hook pre-tool\|stop\|session-start` | The entry point `hooks/hooks.json` calls |
+*Trust records the repo's path and a SHA-256 hash of the config's exact contents, so any change made outside `supermatt config` has to be approved again.*
+
+- **Trust is exact.** `supermatt init` trusts the config it writes, and `supermatt config` keeps a trusted config trusted after its own edit. Any other change (a pull, a teammate's edit, your own hand edit) needs approving again. `/supermatt:run`, `/supermatt:setup` and `/supermatt:status` show you the `test_command` and ask before trusting.
+- **You are told when supermatt is off.** An untrusted or invalid config turns the hooks off for that repo, and each session start (including after `/clear` or compaction) tells you which it is. Only the hooks go quiet: with a valid but untrusted config, the `supermatt ticket` command still applies `review_after_ticket`, because the skills call it directly.
+- **Where trust lives.** Trusted configs are listed in `~/.config/supermatt/trusted.json`, or at `$SUPERMATT_TRUST_FILE` if set. Linked worktrees share the main checkout's trust and pipeline state.
+
+### What the hooks run
+
+| Hook | Fires on | Runs | Claude Code timeout |
+|---|---|---|---|
+| PreToolUse | Bash tool calls | Your `test_command`, only when the command contains `git commit`. Every other Bash call returns before touching git or the disk. | 600 s |
+| PreToolUse | Edit, Write, MultiEdit, NotebookEdit | Only `git` lookups and a read of the config and pipeline state | 10 s |
+| Stop | Every end of turn | `git status`, and your `test_command` when uncommitted code changed since the last passing test run | 600 s |
+| SessionStart | Session start, resume, `/clear` and compaction | Only `git` lookups; tells Claude which feature is in flight, or tells you why supermatt is off | 10 s |
+
+Apart from your `test_command`, which runs through the shell in the repo root and is stopped after `test_timeout` seconds, the hooks run only read-only `git` commands, and the only file they write is `.supermatt/state.json`.
+
+### Limits
+
+- **Guardrails, not a sandbox.** `ticket_before_code` watches Claude's file-editing tools, not every shell command that could write a file.
+- **Commits are recognised by pattern.** `tests_before_commit` looks for `git commit` in a Bash command, including forms like `git -C path commit`. A commit made through a git alias or a script is not seen, and commits you make in your own terminal are never touched.
+- **Tests run on the working tree**, not only the staged changes.
+- **The end-of-turn check gives up.** After three blocks in a row it lets the turn end with a warning, so a session cannot get stuck. A stubborn failure gets through with that warning.
+- **The rules are only as good as the test command.** A suite that doesn't cover the outcome you care about stays green while the product is broken. That is why `/supermatt:advise` starts such cases with an acceptance test.
+- **Relaxing a rule is policy, not a lock.** The skills tell Claude never to change an option to get past a block. Claude could still run `supermatt config` itself; because the config is committed, such a change shows up in `git status`.
+- **The hooks never break a session.** Bad hook input, a broken config or a bug inside supermatt never fail a tool call: a bug is reported as a message, a broken or untrusted config is reported when a session starts, and otherwise the hook quietly does nothing.
 
 ## Troubleshooting
 
-- **Nothing happens in a repo.** Run `/supermatt:status`. The repo may not be set up, or its config may not be trusted on this machine.
-- **The same skill appears twice.** You have the upstream skills installed as well, for example `/tdd` next to `/supermatt:implement`. Remove one set so Claude doesn't pick between duplicates.
-- **A commit or a stop is blocked.** The message says which rule blocked it and shows the end of the test output. Fix the cause, or change the rule with `/supermatt:status`.
+| Symptom | Cause and fix |
+|---|---|
+| Nothing happens in a repo | Run `/supermatt:status`. The repo may not be set up, or its config may not be trusted on this machine. |
+| A session starts with "supermatt is off in this repo" | The config is untrusted or invalid, and the message says which. If untrusted, review the file, especially `test_command`, then ask Claude to run `supermatt trust`, or say yes when `/supermatt:status` offers to trust it. If invalid, `supermatt config` won't load it: fix the named option in `.supermatt/config.json` by hand, then have Claude run `supermatt trust`, because a hand edit needs approving again. |
+| supermatt switched off after `supermatt config test_timeout` | Known bug: the command accepts any number, but the hooks treat a value outside 1-570 as invalid. Set `test_timeout` to 570 or less in `.supermatt/config.json` by hand, then have Claude run `supermatt trust`. |
+| "no ticket is in progress" | `ticket_before_code` caught an edit made outside a ticket. Start the work through `/supermatt:run` or `/supermatt:implement`, or add the path to `exempt` if it isn't code. |
+| A commit or the end of a turn is blocked | The message says what failed and, for test failures, shows the last 30 lines of output. Fix the cause, or change the rule with `/supermatt:status`. |
+| "stopped blocking after 3 attempts" | The end-of-turn checks still fail and have let the turn end. The warning lists what still needs fixing. |
+| Every turn ends with a slow test run | `green_before_stop` runs the tests at the end of each turn that changed code. Turn it off and rely on `tests_before_commit`. |
+| Test runs time out | A run longer than `test_timeout` counts as a failure. Raise it (at most 570 seconds) or point `test_command` at a faster set of tests that still covers what matters. |
+| The same skill appears twice | You also have the original source skills installed, for example `/tdd` next to `/supermatt:implement`. Remove one set so Claude doesn't choose between duplicates. |
+
+## The `supermatt` command
+
+The skills and hooks work through `plugin/bin/supermatt`, a single standard-library Python script that reads your options, records progress and runs your tests.
+
+```mermaid
+flowchart TD
+    you(["You"]) -->|"/supermatt:run and other skills"| skills["Skills"]
+    hooks["Claude Code hooks: commit, edit, end of turn, session start"] --> cmd
+    skills -->|"record stages and tickets"| cmd["supermatt command"]
+    cmd -->|"options (committed, approved per machine)"| config[".supermatt/config.json"]
+    cmd -->|"progress, local"| state[".supermatt/state.json"]
+    cmd -->|"runs"| tests["your test_command"]
+```
+
+When the plugin is enabled, it is on the `PATH` of Claude's Bash tool, so Claude can run any of these commands when you ask. It is not on your own terminal's `PATH`. To run it there, call `python3 <plugin dir>/bin/supermatt <command>` from inside a repo, where `<plugin dir>` is `~/.claude/plugins/cache/supermatt/supermatt/<version>` for a marketplace install, or `<clone>/plugin` for a local clone or link. If unsure, ask Claude to run `command -v supermatt` for the full path. It acts on the git repo that contains the current directory.
+
+| Command | What it does |
+|---|---|
+| `init [--preset P] [--test-command CMD] [--force]` | Sets the repo up: writes and trusts `.supermatt/config.json`, and gitignores the state file. The preset defaults to `standard`. Won't replace an existing config without `--force`. |
+| `status [--json]` | Shows the pipeline's progress, the options, and whether the config is trusted |
+| `config` | Prints every option |
+| `config KEY [VALUE]` | Shows or sets one option by dotted key, for example `enforce.green_before_stop block`. `pipeline.pause_at` and `exempt` take comma-separated lists, and `pipeline.pause_at none` clears the pauses. |
+| `config preset P` | Sets all four rules from a preset |
+| `trust` | Approves this repo's current config on this machine |
+| `start SLUG [--stage STAGE]` | Starts a feature at `grill`, or at a later stage when the earlier work already exists |
+| `stage STAGE` | Records the stage: `grill`, `spec`, `tickets`, `implement`, `verify`, `finish` or `done` |
+| `base BRANCH` | Records the branch the feature started from, which finish merges back into |
+| `ticket ID implementing\|blocked\|needs-review\|done` | Records a ticket's state, applying `review_after_ticket` |
+| `hook pre-tool\|stop\|session-start` | The entry point `plugin/hooks/hooks.json` calls, with the hook event as JSON on stdin |
 
 ## Develop
 
-```bash
-python3 -m unittest
-```
+To work on supermatt itself, install from a local clone (the repository is private; see [Install](#install)):
 
 ```bash
+git clone https://github.com/deathxdefeat/supermatt.git
+claude plugin marketplace add /path/to/supermatt
+claude plugin install supermatt@supermatt
+```
+
+Or link the plugin folder into your skills directory. Claude Code then loads it in place as `supermatt@skills-dir`, and your edits apply in the next session (or after `/reload-plugins`):
+
+```bash
+ln -s /path/to/supermatt/plugin ~/.claude/skills/supermatt
+```
+
+Run the tests and validate the manifests from the repo root:
+
+```bash
+python3 -m unittest
 claude plugin validate . && claude plugin validate plugin
 ```
 
-The tests drive `plugin/bin/supermatt` the way the hooks call it, in temporary git repos. They also check that the skills' names, links and cross-references stay consistent, and that this README lists every skill. See `CONTEXT.md` for terms and `docs/adr/` for design decisions. `spine_check.py` and `spine-manifest.json` are left over from before the plugin, when the upstream skills were installed as symlinks. They're kept as a record, and the plugin doesn't use them.
+The tests drive `plugin/bin/supermatt` the way the hooks call it, in temporary git repos. They also check that the skills' names, links and cross-references stay consistent, and that this README lists every skill. CI runs them on Ubuntu and macOS with Python 3.9 and 3.13.
+
+| Path | What it is |
+|---|---|
+| `plugin/.claude-plugin/plugin.json` | The plugin manifest |
+| `.claude-plugin/marketplace.json` | The marketplace entry that makes `supermatt@supermatt` installable |
+| `plugin/skills/<name>/` | The 20 skills. `run` and `status` are original; the rest are adapted from the source skills. |
+| `plugin/bin/supermatt` | The command that holds options, pipeline state and the hook logic |
+| `plugin/hooks/hooks.json` | The PreToolUse, Stop and SessionStart hooks, all calling `supermatt hook` |
+| `tests/` | The unit tests |
+| `CONTEXT.md`, `docs/adr/` | Project terms and design decisions |
+| `spine_check.py`, `spine-manifest.json` | Left over from before the plugin, when the source skills were installed as links. Kept as a record; the plugin doesn't use them. |
 
 ## Credits and licence
 
-MIT. See `LICENSE`. Most skills are adapted from Matt Pocock's [skills](https://github.com/mattpocock/skills) and Jesse Vincent's [superpowers](https://github.com/obra/superpowers), both MIT. `plugin/NOTICE.md` has their licences and the upstream commits the skills were imported from.
+MIT; see `LICENSE`. Most skills are adapted from Matt Pocock's [skills](https://github.com/mattpocock/skills) and Jesse Vincent's [superpowers](https://github.com/obra/superpowers), both MIT. `run`, `status`, the `advise` process, `bin/supermatt` and the hooks are original to supermatt. `plugin/NOTICE.md` has their licences and the commits the skills were imported from. The adapted skills don't follow the source repositories automatically: pulling in their changes is a manual merge.
