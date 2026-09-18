@@ -4,10 +4,10 @@ Most supermatt skills are adapted from two MIT-licensed skill collections. Files
 
 | Source | Commit imported | supermatt skills |
 |---|---|---|
-| [mattpocock/skills](https://github.com/mattpocock/skills) | `dabac9d` | setup, grill, spec, tickets, implement, review, debug, merge, triage, prototype, research, wayfinder, architecture, handoff, help |
+| [mattpocock/skills](https://github.com/mattpocock/skills) | `dabac9d` | setup, grill, spec, tickets, implement, review, debug, merge, triage, prototype, research, wayfinder, architecture, handoff, advise (the skills map) |
 | [obra/superpowers](https://github.com/obra/superpowers) | `b36e082` | verify, finish, worktree |
 
-`run`, `status`, `bin/supermatt` and `hooks/` are original to supermatt.
+`run`, `status`, the `advise` process, `bin/supermatt` and `hooks/` are original to supermatt.
 
 ## mattpocock/skills
 

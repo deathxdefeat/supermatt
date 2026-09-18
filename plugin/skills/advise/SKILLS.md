@@ -1,12 +1,6 @@
----
-name: help
-description: Ask which supermatt skill or flow fits your situation. A router over the supermatt skills.
-disable-model-invocation: true
----
+# The supermatt skills
 
-# Help
-
-Answer the user's situation with the one skill or flow that fits, and say why in a sentence. If the repo is set up, run `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" status` first: a feature in flight usually means the answer is `/supermatt:run` to resume it.
+The map `/supermatt:advise` routes over.
 
 ## The main flow: idea → ship
 
@@ -40,5 +34,6 @@ Keep stages 1 to 3 in one context window. Each ticket can start fresh (`pipeline
 
 ## Setup and options
 
+- **`/supermatt:advise`**: describe your situation and get a sequenced plan for which of these to run.
 - **`/supermatt:setup`**: once per repo (the pipeline runs it for you).
 - **`/supermatt:status`**: where the pipeline is, and every option: enforcement presets (`strict`, `standard`, `light`, `off`) or single rules, the test command, and pipeline behaviour (interview mode, pause points, branch or worktree, per-ticket subagents, how to finish).

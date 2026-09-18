@@ -21,7 +21,7 @@ for why.
 ## Architecture
 
 - `plugin/.claude-plugin/plugin.json`: the manifest.
-- `plugin/skills/<name>/`: the fused skills. `run` and `status` are original;
+- `plugin/skills/<name>/`: the fused skills. `run`, `status` and `advise` are original;
   the rest are adapted from the source clones (see `plugin/NOTICE.md`).
 - `plugin/bin/supermatt`: the stdlib Python command the skills and hooks call
   for options (`.supermatt/config.json`, committed) and pipeline state

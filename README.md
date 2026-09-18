@@ -24,7 +24,7 @@ On first use in a repo it runs `/supermatt:setup`, which asks where issues live,
 
 Flags for one run: `--auto` settles the grilling questions itself and runs without pausing; `--guided` pauses after every stage.
 
-You can still run each stage on its own: `/supermatt:grill`, `/supermatt:spec`, `/supermatt:tickets`, `/supermatt:implement`, `/supermatt:review`, `/supermatt:verify`, `/supermatt:finish`. Side skills: `debug`, `merge`, `triage`, `prototype`, `research`, `architecture`, `wayfinder`, `worktree`, `handoff`. If you're not sure which to use, `/supermatt:help` picks one.
+You can still run each stage on its own: `/supermatt:grill`, `/supermatt:spec`, `/supermatt:tickets`, `/supermatt:implement`, `/supermatt:review`, `/supermatt:verify`, `/supermatt:finish`. Side skills: `debug`, `merge`, `triage`, `prototype`, `research`, `architecture`, `wayfinder`, `worktree`, `handoff`. Not sure where to start? Describe the situation to `/supermatt:advise` (for example, paste the problem). It checks the repo, works out what kind of situation it is, and gives you a numbered plan: which skills to run, in what order, with which options, and the first command to type.
 
 ## Options
 
