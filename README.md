@@ -352,7 +352,7 @@ The tests drive `plugin/bin/supermatt` the way the hooks call it, in temporary g
 
 ### Diagrams
 
-The diagrams are drawn with [Archify](https://github.com/tt-a1i/archify). Their sources are the JSON specs in `docs/diagrams/`, and the images in `docs/images/` are light-theme captures of the rendered diagrams.
+The diagram sources are the JSON specs in `docs/diagrams/`. The images in `docs/images/` are light-theme captures of them.
 
 ## Credits and licence
 
