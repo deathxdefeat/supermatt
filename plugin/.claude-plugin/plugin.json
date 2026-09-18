@@ -1,0 +1,10 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "supermatt",
+  "version": "0.1.0",
+  "description": "One engineering workflow: a resumable grill-to-ship pipeline, a fused skill set, and optional per-repo enforcement hooks.",
+  "author": {
+    "name": "deathxdefeat"
+  },
+  "license": "MIT"
+}

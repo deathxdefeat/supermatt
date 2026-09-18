@@ -1,0 +1,459 @@
+#!/usr/bin/env python3
+"""supermatt: pipeline state, per-repo options and enforcement hooks.
+
+A repo opts in by having `.supermatt/config.json` (written by `supermatt init`).
+Without it every hook is a no-op, so the plugin never touches other repos.
+"""
+import argparse
+import fnmatch
+import hashlib
+import json
+import os
+import re
+import subprocess
+import sys
+
+CONFIG = ".supermatt/config.json"
+STATE = ".supermatt/state.json"
+STAGES = ("grill", "spec", "tickets", "implement", "verify", "finish", "done")
+TICKET_STATES = ("implementing", "needs-review", "done")
+LEVELS = ("off", "warn", "block")
+RULES = ("tests_before_commit", "ticket_before_code", "review_after_ticket", "green_before_stop")
+PRESETS = {
+    "strict": dict.fromkeys(RULES, "block"),
+    "standard": {"tests_before_commit": "block", "ticket_before_code": "warn",
+                 "review_after_ticket": "block", "green_before_stop": "block"},
+    "light": dict.fromkeys(RULES, "warn"),
+    "off": dict.fromkeys(RULES, "off"),
+}
+DEFAULTS = {
+    "test_command": None,
+    "test_timeout": 300,
+    "exempt": [".scratch/*", "docs/*", ".supermatt/*", "*.md"],
+    "pipeline": {
+        "interview": "full",
+        "pause_at": ["tickets", "finish"],
+        "branch": True,
+        "worktree": False,
+        "ticket_agents": False,
+        "finish": "ask",
+    },
+    "enforce": PRESETS["standard"],
+}
+CHOICES = {
+    "pipeline.interview": ("full", "auto"),
+    "pipeline.finish": ("ask", "merge", "pr", "keep"),
+    **{"enforce." + r: LEVELS for r in RULES},
+}
+MAX_STOP_BLOCKS = 3
+GIT_COMMIT = re.compile(r"(^|[;&|(\s])git(\s+-\S+(\s+\S+)?)*\s+commit\b")
+EDIT_TOOLS = ("Edit", "Write", "MultiEdit", "NotebookEdit")
+
+
+class UsageError(Exception):
+    pass
+
+
+# ---------- repo, config, state ----------
+
+def repo_root(cwd):
+    try:
+        out = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=cwd,
+                             capture_output=True, text=True)
+    except OSError:
+        return os.path.realpath(cwd)
+    return os.path.realpath(out.stdout.strip()) if out.returncode == 0 else os.path.realpath(cwd)
+
+
+def merged(base, override):
+    out = dict(base)
+    for k, v in override.items():
+        out[k] = merged(base[k], v) if isinstance(v, dict) and isinstance(base.get(k), dict) else v
+    return out
+
+
+def read_json(path):
+    with open(path) as f:
+        return json.load(f)
+
+
+def write_json(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+    os.replace(tmp, path)
+
+
+def load_config(root):
+    """Return the effective config, or None when the repo has not opted in."""
+    path = os.path.join(root, CONFIG)
+    if not os.path.isfile(path):
+        return None
+    try:
+        raw = read_json(path)
+    except (OSError, ValueError) as e:
+        raise UsageError(f"cannot read {CONFIG}: {e}")
+    if not isinstance(raw, dict):
+        raise UsageError(f"{CONFIG} must be a JSON object")
+    return merged(DEFAULTS, raw)
+
+
+def require_config(root):
+    config = load_config(root)
+    if config is None:
+        raise UsageError(f"no {CONFIG} in {root}; run `supermatt init` (or /supermatt:setup) first")
+    return config
+
+
+def load_state(root):
+    state = {"feature": None, "stage": None, "ticket": None, "tickets": {}, "green": None, "stop_blocks": 0}
+    try:
+        state.update(read_json(os.path.join(root, STATE)))
+    except (OSError, ValueError):
+        pass
+    return state
+
+
+def save_state(root, state):
+    write_json(os.path.join(root, STATE), state)
+
+
+# ---------- commands ----------
+
+def cmd_init(args, root):
+    path = os.path.join(root, CONFIG)
+    if os.path.exists(path) and not args.force:
+        raise UsageError(f"{CONFIG} already exists; use `supermatt config` to change options, or --force")
+    raw = {"test_command": args.test_command, "enforce": PRESETS[args.preset]}
+    write_json(path, raw)
+    ignore = os.path.join(root, ".gitignore")
+    lines = open(ignore).read().splitlines() if os.path.exists(ignore) else []
+    if STATE not in lines:
+        with open(ignore, "a") as f:
+            if lines and lines[-1] != "":
+                f.write("\n")
+            f.write(STATE + "\n")
+    print(f"wrote {CONFIG} (preset {args.preset}); {STATE} is gitignored")
+
+
+def cmd_config(args, root):
+    config = require_config(root)
+    if args.key is None:
+        print(json.dumps(config, indent=2))
+        return
+    if args.key == "preset":
+        if args.value not in PRESETS:
+            raise UsageError(f"preset must be one of {', '.join(PRESETS)}")
+        return set_raw(root, ["enforce"], PRESETS[args.value])
+    keys = args.key.split(".")
+    current = config
+    for k in keys:
+        if not isinstance(current, dict) or k not in current:
+            raise UsageError(f"unknown option {args.key}")
+        current = current[k]
+    if args.value is None:
+        print(json.dumps(current))
+        return
+    set_raw(root, keys, parse_value(args.key, current, args.value))
+
+
+def parse_value(key, current, text):
+    if key in CHOICES:
+        if text not in CHOICES[key]:
+            raise UsageError(f"{key} must be one of {', '.join(CHOICES[key])}")
+        return text
+    if key == "pipeline.pause_at":
+        stages = [s for s in text.split(",") if s]
+        bad = [s for s in stages if s not in STAGES]
+        if bad:
+            raise UsageError(f"unknown stage(s) {', '.join(bad)}; stages are {', '.join(STAGES)}")
+        return stages
+    if key == "exempt":
+        return [p for p in text.split(",") if p]
+    if isinstance(current, bool):
+        if text not in ("true", "false"):
+            raise UsageError(f"{key} must be true or false")
+        return text == "true"
+    if isinstance(current, int):
+        try:
+            return int(text)
+        except ValueError:
+            raise UsageError(f"{key} must be a number")
+    if key == "test_command":
+        return text or None
+    raise UsageError(f"{key} cannot be set from the command line; edit {CONFIG}")
+
+
+def set_raw(root, keys, value):
+    path = os.path.join(root, CONFIG)
+    raw = read_json(path)
+    node = raw
+    for k in keys[:-1]:
+        node = node.setdefault(k, {})
+    node[keys[-1]] = value
+    write_json(path, raw)
+    print(f"{'.'.join(keys)} = {json.dumps(value)}")
+
+
+def cmd_status(args, root):
+    config = load_config(root)
+    state = load_state(root)
+    if args.json:
+        print(json.dumps({"root": root, "configured": config is not None, "config": config, "state": state}, indent=2))
+        return
+    if config is None:
+        print(f"supermatt: not set up in {root} (run /supermatt:setup)")
+        return
+    print(f"feature: {state['feature'] or '-'}")
+    print(f"stage:   {state['stage'] or '-'}")
+    print(f"ticket:  {state['ticket'] or '-'}")
+    for tid in sorted(state["tickets"]):
+        print(f"  {tid}: {state['tickets'][tid]}")
+    print(f"tests:   {config['test_command'] or '(none set)'}")
+    print("enforce: " + ", ".join(f"{r}={config['enforce'][r]}" for r in RULES))
+    p = config["pipeline"]
+    print(f"pipeline: interview={p['interview']} pause_at={','.join(p['pause_at']) or '-'} "
+          f"branch={str(p['branch']).lower()} worktree={str(p['worktree']).lower()} "
+          f"ticket_agents={str(p['ticket_agents']).lower()} finish={p['finish']}")
+
+
+def cmd_start(args, root):
+    require_config(root)
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", args.feature):
+        raise UsageError("feature slug must be lowercase letters, digits and hyphens")
+    state = load_state(root)
+    state.update(feature=args.feature, stage=STAGES[0], ticket=None, tickets={}, stop_blocks=0)
+    save_state(root, state)
+    print(f"feature {args.feature}: stage {STAGES[0]}")
+
+
+def cmd_stage(args, root):
+    require_config(root)
+    state = load_state(root)
+    if not state["feature"]:
+        raise UsageError("no active feature; run `supermatt start <feature>` first")
+    state["stage"] = args.stage
+    save_state(root, state)
+    print(f"feature {state['feature']}: stage {args.stage}")
+
+
+def cmd_ticket(args, root):
+    config = require_config(root)
+    state = load_state(root)
+    if not state["feature"]:
+        raise UsageError("no active feature; run `supermatt start <feature>` first")
+    level = config["enforce"]["review_after_ticket"]
+    problem = None
+    if args.status == "implementing":
+        pending = [t for t, s in state["tickets"].items() if s == "needs-review" and t != args.id]
+        if pending:
+            problem = f"ticket {', '.join(sorted(pending))} is committed but not reviewed; run /supermatt:review first"
+    elif args.status == "done" and state["tickets"].get(args.id) == "implementing":
+        problem = f"ticket {args.id} goes to done only through review: mark it needs-review and run /supermatt:review"
+    if problem and level == "block":
+        raise UsageError(problem)
+    if problem and level == "warn":
+        print("supermatt warning: " + problem, file=sys.stderr)
+    state["tickets"][args.id] = args.status
+    if args.status != "done":
+        state["ticket"] = args.id
+    elif state["ticket"] == args.id:
+        state["ticket"] = None
+    save_state(root, state)
+    print(f"ticket {args.id}: {args.status}")
+
+
+# ---------- hooks ----------
+
+def exempt(config, rel):
+    return any(fnmatch.fnmatch(rel, pat) for pat in config["exempt"])
+
+
+def run_tests(config, root):
+    """Return (passed, tail of output)."""
+    try:
+        out = subprocess.run(config["test_command"], shell=True, cwd=root, capture_output=True,
+                             text=True, timeout=config["test_timeout"])
+    except subprocess.TimeoutExpired:
+        return False, f"timed out after {config['test_timeout']}s"
+    tail = "\n".join((out.stdout + out.stderr).strip().splitlines()[-30:])
+    return out.returncode == 0, tail
+
+
+def changed_fingerprint(config, root):
+    """Hash the content of changed, non-exempt files; None when there are none."""
+    out = subprocess.run(["git", "status", "--porcelain", "-z", "--untracked-files=all"], cwd=root,
+                         capture_output=True, text=True)
+    if out.returncode != 0:
+        return None
+    paths, fields = [], out.stdout.split("\0")
+    i = 0
+    while i < len(fields):
+        entry = fields[i]
+        i += 1
+        if len(entry) < 4:
+            continue
+        if entry[0] in "RC":
+            i += 1  # the rename source follows as its own field
+        rel = entry[3:]
+        if not exempt(config, rel):
+            paths.append(rel)
+    if not paths:
+        return None
+    h = hashlib.sha256()
+    for rel in sorted(paths):
+        h.update(rel.encode() + b"\0")
+        try:
+            with open(os.path.join(root, rel), "rb") as f:
+                h.update(f.read())
+        except OSError:
+            h.update(b"<deleted>")
+    return h.hexdigest()
+
+
+def emit(obj):
+    print(json.dumps(obj))
+
+
+def hook_pre_tool(event, root, config):
+    tool, tool_input = event.get("tool_name"), event.get("tool_input") or {}
+    enforce = config["enforce"]
+    if tool == "Bash" and GIT_COMMIT.search(tool_input.get("command", "")):
+        level = enforce["tests_before_commit"]
+        if level == "off" or not config["test_command"]:
+            return 0
+        passed, tail = run_tests(config, root)
+        if passed:
+            return 0
+        msg = f"supermatt: tests fail, so this commit is {'blocked' if level == 'block' else 'unverified'}.\n" \
+              f"$ {config['test_command']}\n{tail}"
+        return block_or_warn(level, msg, "PreToolUse")
+    if tool in EDIT_TOOLS:
+        level = enforce["ticket_before_code"]
+        path = tool_input.get("file_path") or tool_input.get("notebook_path")
+        if level == "off" or not path:
+            return 0
+        path = os.path.realpath(os.path.join(event.get("cwd") or root, path))
+        if not path.startswith(root + os.sep):
+            return 0
+        if exempt(config, os.path.relpath(path, root)):
+            return 0
+        state = load_state(root)
+        if state["ticket"] and state["tickets"].get(state["ticket"]) in ("implementing", "needs-review"):
+            return 0
+        msg = ("supermatt: no ticket is in progress, so code edits are "
+               f"{'blocked' if level == 'block' else 'off-plan'}. Start one with /supermatt:run or "
+               "`supermatt ticket <id> implementing`, or change enforce.ticket_before_code.")
+        return block_or_warn(level, msg, "PreToolUse")
+    return 0
+
+
+def hook_stop(event, root, config):
+    state = load_state(root)
+    enforce = config["enforce"]
+    blocks, warns = [], []
+    pending = sorted(t for t, s in state["tickets"].items() if s == "needs-review")
+    if pending and enforce["review_after_ticket"] != "off":
+        msg = f"ticket {', '.join(pending)} is committed but not reviewed; run /supermatt:review."
+        (blocks if enforce["review_after_ticket"] == "block" else warns).append(msg)
+    level = enforce["green_before_stop"]
+    if level != "off" and config["test_command"]:
+        fp = changed_fingerprint(config, root)
+        if fp and fp != state["green"]:
+            passed, tail = run_tests(config, root)
+            if passed:
+                state["green"] = fp
+            else:
+                msg = f"uncommitted changes fail the tests.\n$ {config['test_command']}\n{tail}"
+                (blocks if level == "block" else warns).append(msg)
+    if blocks and state["stop_blocks"] < MAX_STOP_BLOCKS:
+        state["stop_blocks"] += 1
+        save_state(root, state)
+        print("supermatt: not done yet.\n- " + "\n- ".join(blocks), file=sys.stderr)
+        return 2
+    if blocks:
+        warns = [f"stopped blocking after {MAX_STOP_BLOCKS} attempts"] + blocks + warns
+    state["stop_blocks"] = 0
+    save_state(root, state)
+    if warns:
+        emit({"systemMessage": "supermatt: " + "\n- ".join(warns)})
+    return 0
+
+
+def hook_session_start(event, root, config):
+    state = load_state(root)
+    if not state["feature"] or state["stage"] == "done":
+        return 0
+    ticket = f", ticket {state['ticket']} ({state['tickets'].get(state['ticket'])})" if state["ticket"] else ""
+    emit({"hookSpecificOutput": {
+        "hookEventName": "SessionStart",
+        "additionalContext": f"supermatt: feature {state['feature']} is at stage {state['stage']}{ticket}. "
+                             "Resume it with /supermatt:run when the user wants to continue.",
+    }})
+    return 0
+
+
+def block_or_warn(level, msg, event_name):
+    if level == "block":
+        print(msg, file=sys.stderr)
+        return 2
+    emit({"hookSpecificOutput": {"hookEventName": event_name, "additionalContext": msg}, "systemMessage": msg})
+    return 0
+
+
+HOOKS = {"pre-tool": hook_pre_tool, "stop": hook_stop, "session-start": hook_session_start}
+
+
+def cmd_hook(args, root):
+    try:
+        event = json.load(sys.stdin)
+    except ValueError:
+        event = {}
+    root = repo_root(event.get("cwd") or os.getcwd())
+    try:
+        config = load_config(root)
+    except UsageError:
+        return 0  # a broken config must never wedge the session
+    if config is None:
+        return 0
+    return HOOKS[args.event](event, root, config)
+
+
+# ---------- entry point ----------
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(prog="supermatt", description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("init", help="opt this repo in: write .supermatt/config.json")
+    p.add_argument("--preset", choices=PRESETS, default="standard")
+    p.add_argument("--test-command")
+    p.add_argument("--force", action="store_true")
+    p = sub.add_parser("config", help="show or change an option (dotted key), or `config preset <name>`")
+    p.add_argument("key", nargs="?")
+    p.add_argument("value", nargs="?")
+    p = sub.add_parser("status", help="show the pipeline state and options")
+    p.add_argument("--json", action="store_true")
+    p = sub.add_parser("start", help="start a feature in the pipeline")
+    p.add_argument("feature")
+    p = sub.add_parser("stage", help="record the pipeline stage")
+    p.add_argument("stage", choices=STAGES)
+    p = sub.add_parser("ticket", help="record a ticket's state")
+    p.add_argument("id")
+    p.add_argument("status", choices=TICKET_STATES)
+    p = sub.add_parser("hook", help="run as a Claude Code hook (reads the event on stdin)")
+    p.add_argument("event", choices=HOOKS)
+    args = parser.parse_args(argv)
+    commands = {"init": cmd_init, "config": cmd_config, "status": cmd_status, "start": cmd_start,
+                "stage": cmd_stage, "ticket": cmd_ticket, "hook": cmd_hook}
+    try:
+        return commands[args.cmd](args, repo_root(os.getcwd())) or 0
+    except UsageError as e:
+        print(f"supermatt: {e}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
