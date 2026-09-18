@@ -2,7 +2,7 @@
 
 The map `/supermatt:advise` routes over.
 
-## The main flow: idea → ship
+## The main path: idea → ship
 
 **`/supermatt:run <feature>`** does the whole thing and remembers where it is. The stages it drives can also be run by hand:
 
@@ -21,7 +21,7 @@ Keep stages 1 to 3 in one context window. Each ticket can start fresh (`pipeline
 
 - **Issues piling up** that you didn't write → **`/supermatt:triage`**, which produces agent-ready issues for `/supermatt:implement`. Never triage tickets `/supermatt:tickets` made.
 - **Something broken, flaky or slow** → **`/supermatt:debug`**: builds a tight red feedback loop before theorising, then fixes with a regression test.
-- **A huge, foggy effort** too big for one session → **`/supermatt:wayfinder`**: a map of decision tickets resolved one at a time; when it clears, merge onto the main flow at `/supermatt:spec`.
+- **A huge, foggy effort** too big for one session → **`/supermatt:wayfinder`**: a map of decision tickets resolved one at a time; when it clears, merge onto the main path at `/supermatt:spec`.
 
 ## Standalone
 

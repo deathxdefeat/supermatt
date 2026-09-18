@@ -1,9 +1,9 @@
 ---
 name: tickets
-description: Break a plan, spec, or the current conversation into a set of tracer-bullet tickets, each declaring its blocking edges, published to the configured tracker (edges as text in one file per ticket locally, or native blocking links on a real tracker).
+description: Break a plan, spec, or the current conversation into a set of tracer-bullet tickets, each declaring its blocking edges, published to the configured tracker (edges as text in one file per ticket locally, or native blocking links on a real tracker). Use when the user wants a spec or plan split into tickets, issues or slices.
 ---
 
-# To Tickets
+# Tickets
 
 Break a plan, spec, or conversation into a set of **tickets**: tracer-bullet vertical slices, each declaring the tickets that **block** it.
 
@@ -52,7 +52,7 @@ Ask the user:
 - Are the blocking edges correct: does each ticket only depend on tickets that genuinely gate it?
 - Should any tickets be merged or split further?
 
-Iterate until the user approves the breakdown. When `/supermatt:run` called you and `tickets` is not in `pipeline.pause_at`, show the breakdown and publish it without waiting.
+Iterate until the user approves the breakdown. When called with `--auto` (the pipeline does this when `interview` is `auto`), show the breakdown and publish it without waiting.
 
 ### 5. Publish the tickets to the configured tracker
 
@@ -75,6 +75,8 @@ Do NOT close or modify any parent issue.
 
 **Status:** ready-for-agent
 
+**Seams under test:** the public interfaces this ticket's tests drive (from the spec's Seams Under Test).
+
 - [ ] Acceptance criterion 1
 - [ ] Acceptance criterion 2
 
@@ -89,6 +91,10 @@ A reference to the parent issue on the tracker (if the source was an existing is
 ## What to build
 
 The end-to-end behaviour this ticket makes work, from the user's perspective, not layer-by-layer implementation.
+
+## Seams under test
+
+The public interfaces this ticket's tests drive (from the spec's Seams Under Test).
 
 ## Acceptance criteria
 

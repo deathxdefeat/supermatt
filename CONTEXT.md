@@ -49,7 +49,7 @@ The unit of work the pipeline carries, named by a kebab-case slug that also name
 _Avoid_: project, task
 
 **Ticket state**:
-Where one ticket is in the pipeline: implementing, needs-review or done. Separate from the triage status in the tracker.
+Where one ticket is in the pipeline: implementing, blocked (waiting on the user), needs-review or done. Separate from the triage status in the tracker.
 _Avoid_: ticket status
 
 **Opted-in repo**:
@@ -59,6 +59,10 @@ _Avoid_: enabled repo, configured project
 **Enforcement rule**:
 One check the plugin's hooks apply in an opted-in repo: tests_before_commit, ticket_before_code, review_after_ticket or green_before_stop. Each is set to off, warn or block.
 _Avoid_: guard, gate, policy
+
+**Trusted config**:
+A config this machine has approved to run hooks, recorded by repo path and the config's exact bytes. A config that changed since it was trusted is untrusted, and hooks ignore it.
+_Avoid_: allowed, approved repo
 
 **Preset**:
 A named setting for all four enforcement rules at once: strict, standard, light or off.

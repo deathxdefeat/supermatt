@@ -3,7 +3,7 @@ name: worktree
 description: Use when starting feature work that needs isolation from the current workspace - ensures an isolated workspace exists via native tools or a git worktree fallback.
 ---
 
-# Using Git Worktrees
+# Worktree
 
 ## Overview
 
@@ -38,7 +38,7 @@ Report with branch state:
 
 **If `GIT_DIR == GIT_COMMON` (or in a submodule):** You are in a normal repo checkout.
 
-Has the user already indicated their worktree preference in your instructions? If not, ask for consent before creating a worktree:
+Has the user already indicated their worktree preference (in your instructions, or `pipeline.worktree: true` in the repo's supermatt options)? If not, ask for consent before creating a worktree:
 
 > "Would you like me to set up an isolated worktree? It protects your current branch from changes."
 
@@ -83,7 +83,7 @@ Follow this priority order. Explicit user preference always beats observed files
 git check-ignore -q .worktrees 2>/dev/null || git check-ignore -q worktrees 2>/dev/null
 ```
 
-**If NOT ignored:** Add to .gitignore, commit the change, then proceed.
+**If NOT ignored:** Add it to `.gitignore` and tell the user. Commit that one-line change only with their OK (it lands on the current branch); otherwise leave it uncommitted and proceed.
 
 **Why critical:** Prevents accidentally committing worktree contents to repository.
 
@@ -101,7 +101,7 @@ cd "$path"
 
 ## Step 2: Project Setup
 
-Auto-detect and run appropriate setup:
+Install dependencies the way the project documents (its README, `AGENTS.md`/`CLAUDE.md`, or a setup script). Installing runs the packages' own install scripts, so tell the user the command before you run it. Without project guidance, the usual commands are:
 
 ```bash
 # Node.js
@@ -112,7 +112,7 @@ if [ -f Cargo.toml ]; then cargo build; fi
 
 # Python
 if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-if [ -f pyproject.toml ]; then poetry install; fi
+if [ -f poetry.lock ]; then poetry install; fi
 
 # Go
 if [ -f go.mod ]; then go mod download; fi
@@ -120,12 +120,7 @@ if [ -f go.mod ]; then go mod download; fi
 
 ## Step 3: Verify Clean Baseline
 
-Run tests to ensure workspace starts clean:
-
-```bash
-# Use project-appropriate command
-npm test / cargo test / pytest / go test ./...
-```
+Run tests to ensure workspace starts clean. Use the `test_command` from `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" status` when the repo is opted in; otherwise the project's own (`npm test` / `cargo test` / `pytest` / `go test ./...`).
 
 **If tests fail:** Report failures, ask whether to proceed or investigate.
 

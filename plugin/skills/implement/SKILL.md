@@ -12,10 +12,10 @@ Build the work described by the spec or ticket the user passes (or the behaviour
 
 1. **Restate** in two or three lines what the spec or ticket asks for and which seams you will test. If it contradicts the code, the spec, or an ADR, say so and stop; otherwise continue without waiting.
 2. **Record the fixed point**: `git rev-parse HEAD`. Review diffs against it.
-3. **Track it** when this repo is set up for supermatt (`"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" status` says so) and a feature is active: `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" ticket <NN> implementing`. If it refuses because an earlier ticket is still unreviewed, run `/supermatt:review` on that ticket first. Code edits outside a ticket in progress may be blocked by the `ticket_before_code` rule.
+3. **Track it** when the repo is opted in (`"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" status` shows its options): `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" ticket <id> implementing`, where `<id>` is the ticket's local file number (`01`) or its issue number (`123`); for work with no ticket, pick a short id such as `fix-login`. If it refuses because an earlier ticket is still unreviewed, run `/supermatt:review` on that ticket first. Code edits need a ticket in progress when the `ticket_before_code` rule is on. Before asking the user anything that ends your turn, record `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" ticket <id> blocked`, and set it back to `implementing` when they answer.
 4. **Build it test-first** with the loop below, at the pre-agreed seams. Run the typechecker (if the project has one) and single test files regularly, and the full test suite once at the end.
 5. **Commit** to the current branch. When the `tests_before_commit` rule is on, the commit runs the configured test command first and a red suite blocks it: fix the code, not the rule.
-6. **Mark it for review**: `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" ticket <NN> needs-review` (when tracked), then call the Skill tool with "supermatt:review", passing the fixed point from step 2.
+6. **Mark it for review**: `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" ticket <id> needs-review` (when tracked), then call the Skill tool with "supermatt:review", passing the fixed point from step 2 and the ticket (its id and its path or URL).
 
 ## Test-driven development
 
@@ -33,7 +33,7 @@ See [tests.md](tests.md) for examples and [mocking.md](mocking.md) for mocking g
 
 A **seam** is the public boundary you test at: the interface where you observe behavior without reaching inside. Tests live at seams, never against internals.
 
-**Test only at pre-agreed seams.** Before writing any test, write down the seams under test and confirm them with the user (a spec or ticket that names its seams counts as confirmed). No test is written at an unconfirmed seam. You can't test everything, so agreeing the seams up front is how testing effort lands on the critical paths and complex logic instead of every edge case.
+**Test only at pre-agreed seams.** Before writing any test, write down the seams under test and confirm them with the user. A spec or ticket whose "Seams under test" section names them counts as confirmed, and so does a pipeline run with `interview=auto`. No test is written at an unconfirmed seam. You can't test everything, so agreeing the seams up front is how testing effort lands on the critical paths and complex logic instead of every edge case.
 
 Ask: "What's the public interface, and which seams should we test?"
 

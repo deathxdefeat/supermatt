@@ -3,7 +3,7 @@ name: verify
 description: Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always
 ---
 
-# Verification Before Completion
+# Verify
 
 ## Overview
 
@@ -125,6 +125,6 @@ At the `verify` stage of `/supermatt:run`, verification means all of:
 
 1. The configured `test_command` (see `supermatt status`), run fresh on the tree you will integrate: 0 failures.
 2. The spec, re-read, turned into a line-by-line checklist of its user stories and implementation decisions, each marked met, partial or missing with the evidence (a test name, a command output, a file).
-3. Every ticket for the feature is `done` in `supermatt status` and closed in the tracker.
+3. Every ticket for the feature is `done` in `supermatt status` and done or closed in the tracker.
 
-Report gaps as gaps. A missing requirement sends the pipeline back to `tickets` for a new ticket; it is not waved through.
+Report gaps as gaps. Each missing or partial requirement becomes one new ticket (the next free number) covering exactly that gap; then `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" stage implement` sends the pipeline back into its ticket loop. A gap is never waved through.

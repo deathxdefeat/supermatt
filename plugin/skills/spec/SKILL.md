@@ -1,7 +1,9 @@
 ---
 name: spec
-description: "Turn the current conversation into a spec and publish it to the project issue tracker: no interview, just synthesis of what you've already discussed."
+description: "Turn the current conversation into a spec and publish it to the project issue tracker: no interview, just synthesis of what you've already discussed. Use when the user asks for a spec, PRD or write-up of a feature that has been talked through."
 ---
+
+# Spec
 
 This skill takes the current conversation context and codebase understanding and produces a spec. Do NOT interview the user; just synthesize what you already know.
 
@@ -13,7 +15,7 @@ The issue tracker and triage label vocabulary should have been provided to you. 
 
 2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest seam possible. If new seams are needed, propose them at the highest point you can. The fewer seams across the codebase, the better - the ideal number is one.
 
-Check with the user that these seams match their expectations. When `/supermatt:run` called you and `spec` is not in `pipeline.pause_at`, state the seams in the spec and continue without waiting.
+Check with the user that these seams match their expectations. When called with `--auto` (the pipeline does this when `interview` is `auto`), record the seams in the spec and continue without waiting.
 
 3. Write the spec using the template below, then publish it to the project issue tracker. Apply the `ready-for-agent` triage label - no need for additional triage. On the local tracker the spec is `.scratch/<feature-slug>/spec.md`, where `<feature-slug>` is the active feature in `supermatt status` when there is one.
 
@@ -54,6 +56,10 @@ A list of implementation decisions that were made. This can include:
 Do NOT include specific file paths or code snippets. They may end up being outdated very quickly.
 
 Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it within the relevant decision and note briefly that it came from a prototype. Trim to the decision-rich parts, not a working demo, just the important bits.
+
+## Seams Under Test
+
+The public interfaces the tests will drive, highest seam first, as agreed in step 2. Implementation treats these as confirmed.
 
 ## Testing Decisions
 

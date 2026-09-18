@@ -1,7 +1,6 @@
 ---
 name: setup
 description: "Set this repo up for supermatt: issue tracker, triage labels, domain doc layout, test command, enforcement preset and pipeline options. Run once per repo; /supermatt:run runs it for you when it is missing."
-disable-model-invocation: true
 ---
 
 # Setup
@@ -27,7 +26,7 @@ Look at the current repo to understand its starting state. Read whatever exists;
 - `docs/adr/` and any `src/*/docs/adr/` directories
 - `docs/agents/`: does this skill's prior output already exist?
 - `.scratch/`: a sign that a local-markdown issue tracker convention is already in use
-- `.supermatt/config.json`: is the repo already set up? (`"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" status`)
+- `.supermatt/config.json`: is the repo already set up, and does this machine trust its config? (`"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" status`). A config that exists but is not trusted came from a clone or pull: show the user its `test_command`, and on their OK run `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" trust` instead of re-running setup.
 - The test command: `package.json` scripts, `Makefile`, `pyproject.toml`, `Cargo.toml`, `go.mod`, the repo's `AGENTS.md`/`CLAUDE.md` commands section, CI config. Run the candidate once to confirm it works before proposing it.
 - Monorepo signals: a `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or a populated `packages/*` with its own `src/`. These are present only in a genuinely large multi-package repo; their absence means single-context, which is almost every repo.
 
@@ -81,7 +80,7 @@ Any single rule can be changed later: `supermatt config enforce.<rule> off|warn|
 **Section F: Pipeline options.** Show the defaults and ask whether to keep them (recommended: **yes**):
 
 - `pipeline.interview`: `full` (the grilling waits for the user's answers) or `auto` (it settles every question with its recommended answer and records them as assumed decisions in the spec)
-- `pipeline.pause_at`: stages where `/supermatt:run` stops for the user's go-ahead before moving on. Default `tickets,finish`. Stages: `grill`, `spec`, `tickets`, `implement`, `verify`, `finish`.
+- `pipeline.pause_at`: stages `/supermatt:run` pauses *before*, waiting for the user's go-ahead. Default `implement,finish`: check the spec and tickets before code is written, and the verify evidence before anything is merged. Stages: `grill`, `spec`, `tickets`, `implement`, `verify`, `finish`; `none` never pauses.
 - `pipeline.branch`: create a `<feature-slug>` branch before implementing (default `true`)
 - `pipeline.worktree`: implement in an isolated worktree via `/supermatt:worktree` (default `false`)
 - `pipeline.ticket_agents`: build each ticket in a fresh subagent instead of this context (default `false`)
@@ -145,7 +144,7 @@ Then write the supermatt options:
 "${CLAUDE_PLUGIN_ROOT}/bin/supermatt" config pipeline.<option> <value>                       # once per changed pipeline option
 ```
 
-`init` writes `.supermatt/config.json` (commit it) and gitignores `.supermatt/state.json` (the pipeline's local progress). On a repo that is already set up, change options with `config` instead of re-running `init`.
+`init` writes `.supermatt/config.json` (commit it, before any worktree is created, so worktrees see it), gitignores `.supermatt/state.json` (the pipeline's local progress), and trusts the config on this machine. Teammates who pull the config approve it once with `supermatt trust`. On a repo that is already set up, change options with `config` instead of re-running `init`.
 
 ### 5. Done
 

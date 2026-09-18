@@ -8,7 +8,7 @@ Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 - **Standards**: does the code conform to this repo's documented coding standards?
 - **Spec**: does the code faithfully implement the originating issue / spec?
 
-Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
+Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings. If you are yourself a subagent (you cannot spawn agents), run the two axes one after the other, finishing and writing up each before starting the next.
 
 The issue tracker should have been provided to you. If `docs/agents/issue-tracker.md` is missing, tell the user to run `/supermatt:setup`.
 
@@ -16,7 +16,7 @@ The issue tracker should have been provided to you. If `docs/agents/issue-tracke
 
 ### 1. Pin the fixed point
 
-Whatever the user (or `/supermatt:implement`) passed is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If none was passed, ask for it.
+Whatever the user (or `/supermatt:implement`) passed is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If none was passed, use the merge-base with the base branch in `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" status` when there is one; otherwise ask.
 
 Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git log <fixed-point>..HEAD --oneline`.
 
@@ -26,10 +26,12 @@ Before going further, confirm the fixed point resolves (`git rev-parse <fixed-po
 
 Look for the originating spec, in this order:
 
-1. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), fetched via the workflow in `docs/agents/issue-tracker.md`.
-2. A path the user passed as an argument.
+1. A ticket or spec the caller passed (`/supermatt:implement` passes the ticket).
+2. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), fetched via the workflow in `docs/agents/issue-tracker.md`.
 3. A spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature.
-4. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
+4. If nothing is found, ask the user where the spec is (when a tracked ticket is open, record `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" ticket <id> blocked` before asking). If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
+
+**Reviewing one ticket.** When the source is a ticket, the Spec axis judges the diff against that ticket's acceptance criteria, reading the feature spec only for context. Requirements that belong to other tickets are not findings.
 
 ### 3. Identify the standards sources
 
@@ -81,9 +83,9 @@ End with a one-line summary: total findings per axis, and the worst issue _withi
 
 When the review covers a ticket that `supermatt status` shows as `needs-review`:
 
-1. Fix every finding you judge real: hard standard violations and spec gaps always, smells when the fix is cheap and clearly better. Say which findings you are leaving and why.
+1. Fix every finding you judge real: hard standard violations and gaps against the ticket's acceptance criteria always, smells when the fix is cheap and clearly better. Say which findings you are leaving and why.
 2. Run the full test suite, then commit the fixes.
-3. Mark the ticket done in the issue tracker (per `docs/agents/issue-tracker.md`) and in supermatt: `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" ticket <NN> done`.
+3. Mark the ticket done in the issue tracker (locally, set its `Status:` line to `done`; on a hosted tracker, close the issue, per `docs/agents/issue-tracker.md`) and in supermatt: `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" ticket <id> done`.
 
 ## Why two axes
 

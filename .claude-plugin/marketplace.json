@@ -1,0 +1,17 @@
+{
+  "name": "supermatt",
+  "owner": {
+    "name": "deathxdefeat"
+  },
+  "metadata": {
+    "description": "The supermatt engineering workflow plugin."
+  },
+  "plugins": [
+    {
+      "name": "supermatt",
+      "source": "./plugin",
+      "description": "One engineering workflow: a resumable grill-to-ship pipeline, a fused skill set, and optional per-repo enforcement hooks.",
+      "category": "development"
+    }
+  ]
+}

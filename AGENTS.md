@@ -28,13 +28,15 @@ for why.
   (`.supermatt/state.json`, gitignored).
 - `plugin/hooks/hooks.json`: PreToolUse, Stop and SessionStart hooks, all
   running `supermatt hook <event>`.
+- `.claude-plugin/marketplace.json`: makes the repo installable with
+  `claude plugin marketplace add`.
 - `spine_check.py` + `spine-manifest.json`: the older check of the 23 links
   into the source clones.
 
 ## Commands
 
 - Tests: `python3 -m unittest` (run from the repo root)
-- Validate the plugin: `claude plugin validate plugin`
+- Validate the marketplace and plugin: `claude plugin validate . && claude plugin validate plugin`
 - Installed state: `claude plugin list` shows `supermatt@skills-dir` loaded
   from the `~/.claude/skills/supermatt` link to `plugin/`. Edits here load in
   the next session (or `/reload-plugins`).
@@ -47,6 +49,11 @@ for why.
   wedging sessions; `supermatt status` reports the error.
 - The Stop hook blocks at most three times in a row, then lets the turn end
   with a warning.
+- Hooks act only on a trusted config (`supermatt trust`; stored outside the
+  repo). Tests set `SUPERMATT_TRUST_FILE` to a temp path; never let a test
+  write the real trust file.
+- `python3 -m unittest` runs under the macOS system Python (3.9) too; keep the
+  command 3.9-compatible.
 
 ## Agent skills
 

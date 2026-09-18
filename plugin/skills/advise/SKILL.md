@@ -18,7 +18,7 @@ Use whatever the user gave you: the arguments, and anything earlier in the conve
 
 Ground the advice in the repo, not in the description alone:
 
-- `SM status`: is the repo set up, which preset, is a feature in flight and at which stage?
+- `SM status`: is the repo set up and its config trusted, which preset, is a feature in flight and at which stage?
 - `git status`, `git log --oneline -15`: what changed recently, and how much churn is there on the same area?
 - The tracker (`docs/agents/issue-tracker.md` says where): open specs and tickets, and their states.
 - `CONTEXT.md` and `docs/adr/`: does the design the user describes exist on paper?
@@ -43,7 +43,7 @@ Name which of these it is (more than one can apply) and the evidence for it:
 | **Incoming pile** | bug reports or requests you didn't write | `/supermatt:triage` |
 | **Mid-stream** | a feature in flight in `SM status` | `/supermatt:run` to resume |
 
-**The "repeatedly done but not working" pattern outranks the others.** It means nothing verifies the outcome the user actually cares about, so every agent can pass its own checks and still ship something broken. The plan must then begin by writing that outcome down as a failing end-to-end acceptance test (one real input, the exact expected output), putting it in the test command, and using the `strict` preset, so no commit and no claim of done gets past it. Then diagnose, then build.
+**The "repeatedly done but not working" pattern outranks the others.** It means nothing verifies the outcome the user actually cares about, so every agent can pass its own checks and still ship something broken. The plan must then begin by writing that outcome down as an end-to-end acceptance test (one real input, the exact expected output) inside the test command, with the `standard` preset, so no commit and no claim of done gets past it. Write that test as the first step of the fix's ticket: it stays red, uncommitted, while the diagnosis and fix proceed (red mid-ticket does not block a turn), and it is committed together with the fix once it passes. Then diagnose, then build.
 
 **Chains break at the first bad link.** When the problem runs through stages (input → processing → output), plan to trace one real input hop by hop from the start and fix the first hop that goes wrong. Fixing downstream symptoms first wastes the work.
 
@@ -52,7 +52,7 @@ Name which of these it is (more than one can apply) and the evidence for it:
 Answer in this shape, briefly:
 
 1. **What this is**: one or two sentences naming the situation and the evidence, including anything the fact check turned up that the user didn't mention.
-2. **The plan**: numbered steps. Each gives the exact command (with flags), why it comes at this point, and what finished looks like for that step. Put setup and option changes where they belong (for example `/supermatt:setup` with the `strict` preset, `SM config pipeline.pause_at grill,spec,tickets,implement,verify,finish`, or `--guided` / `--auto` on `run`).
+2. **The plan**: numbered steps. Each gives the exact command (with flags), why it comes at this point, and what finished looks like for that step. Put setup and option changes where they belong (for example `/supermatt:setup` with the `standard` preset, `SM config pipeline.pause_at spec,tickets,implement,verify,finish`, or `--guided` / `--auto` on `run`). Recommend `strict` only when the user wants every code edit, including debugging and prototypes, gated behind a ticket.
 3. **What to watch for**: the one or two ways this plan most likely goes wrong, and how the user will notice.
 4. **Start here**: the single first command to type.
 
@@ -60,4 +60,4 @@ Recommend one plan, not a menu. Mention an alternative only when the choice genu
 
 ## 5. Stop
 
-End with the plan. If the user says go, start at step 1 by calling the Skill tool for the skill it names.
+End with the plan. If the user says go, start at step 1: call the Skill tool for the skill it names, except `run`, `triage`, `wayfinder` and `handoff`, which only the user can start; for those, tell the user the exact command to type.

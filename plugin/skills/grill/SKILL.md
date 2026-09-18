@@ -1,6 +1,6 @@
 ---
 name: grill
-description: Grill the user relentlessly about a plan, decision, or idea until you share one understanding, recording glossary terms in CONTEXT.md and decisions as ADRs as they settle. Use when the user wants to stress-test their thinking, sharpen a feature before building it, or uses any 'grill' trigger phrase.
+description: Grill the user relentlessly about a plan, decision, or idea until you share one understanding, recording glossary terms in CONTEXT.md and decisions as ADRs as they settle. Use when the user wants to stress-test their thinking, sharpen a feature before building it, or says "grill me", "stress-test this" or "poke holes in this".
 argument-hint: "[--no-docs] [--auto] <what to grill>"
 ---
 
