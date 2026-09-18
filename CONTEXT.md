@@ -5,7 +5,7 @@ A Claude Code plugin that turns a curated skill set into one engineering workflo
 ## Language
 
 **Skill spine**:
-The curated set of skills installed from the source clones into the skills directory, each as a link.
+The curated set of skills installed from the source clones into the skills directory, each as a link. Retired: the plugin's fused skill set replaced it, and the links were removed.
 _Avoid_: skill set, merged set, skill config
 
 **Spine manifest**:

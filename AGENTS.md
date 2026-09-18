@@ -30,8 +30,11 @@ for why.
   running `supermatt hook <event>`.
 - `.claude-plugin/marketplace.json`: makes the repo installable with
   `claude plugin marketplace add`.
-- `spine_check.py` + `spine-manifest.json`: the older check of the 23 links
-  into the source clones.
+- `spine_check.py` + `spine-manifest.json`: the retired skill spine. The 23
+  links were removed from `~/.claude/skills` on 2026-09-18 because the plugin
+  replaces them, so `spine_check.py` now reports every entry `missing`. The
+  manifest still records how to recreate them:
+  `python3 -c "import json,os;[os.symlink(os.path.expanduser('~/skills-src/'+e['clone']+'/'+e['path']),os.path.expanduser('~/.claude/skills/'+e['name'])) for e in json.load(open('spine-manifest.json'))['skills']]"`
 
 ## Commands
 

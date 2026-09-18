@@ -158,7 +158,7 @@ python3 -m unittest
 claude plugin validate . && claude plugin validate plugin
 ```
 
-The tests drive `plugin/bin/supermatt` the way the hooks call it, in temporary git repos. They also check that the skills' names, links and cross-references stay consistent, and that this README lists every skill. See `CONTEXT.md` for terms and `docs/adr/` for design decisions. `spine_check.py` is maintainer tooling that checks the older symlinks to the upstream skill folders on the author's machine. The plugin doesn't need it.
+The tests drive `plugin/bin/supermatt` the way the hooks call it, in temporary git repos. They also check that the skills' names, links and cross-references stay consistent, and that this README lists every skill. See `CONTEXT.md` for terms and `docs/adr/` for design decisions. `spine_check.py` and `spine-manifest.json` are left over from before the plugin, when the upstream skills were installed as symlinks. They're kept as a record, and the plugin doesn't use them.
 
 ## Credits and licence
 
