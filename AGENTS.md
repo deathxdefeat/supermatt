@@ -1,14 +1,12 @@
 # supermatt — repository agreement
 
-Project rules for any coding agent. The global agreement (`~/.codex/AGENTS.md`)
-already covers execution, verification and delivery; this file holds only
-supermatt-specific truth.
+Project rules for any coding agent working on supermatt.
 
 ## State
 
-Local git repository on `main`, with no remote configured. Commits stay local
-until a remote is added. The only stack is Python 3, standard library only.
-There is no typechecker. Run every command before documenting it.
+Hosted at github.com/deathxdefeat/supermatt; `main` is the only branch and CI
+runs the tests on every push. The only stack is Python 3, standard library
+only. There is no typechecker. Run every command before documenting it.
 
 ## Overview
 
@@ -22,7 +20,7 @@ for why.
 
 - `plugin/.claude-plugin/plugin.json`: the manifest.
 - `plugin/skills/<name>/`: the fused skills. `run`, `status` and `advise` are original;
-  the rest are adapted from the source clones (see `plugin/NOTICE.md`).
+  the rest are adapted from the source skills (see `plugin/NOTICE.md`).
 - `plugin/bin/supermatt`: the stdlib Python command the skills and hooks call
   for options (`.supermatt/config.json`, committed) and pipeline state
   (`.supermatt/state.json`, gitignored).
@@ -30,19 +28,17 @@ for why.
   running `supermatt hook <event>`.
 - `.claude-plugin/marketplace.json`: makes the repo installable with
   `claude plugin marketplace add`.
-- `spine_check.py` + `spine-manifest.json`: the retired skill spine. The 23
-  links were removed from `~/.claude/skills` on 2026-09-18 because the plugin
-  replaces them, so `spine_check.py` now reports every entry `missing`. The
-  manifest still records how to recreate them:
-  `python3 -c "import json,os;[os.symlink(os.path.expanduser('~/skills-src/'+e['clone']+'/'+e['path']),os.path.expanduser('~/.claude/skills/'+e['name'])) for e in json.load(open('spine-manifest.json'))['skills']]"`
+- `docs/diagrams/*.json`: the README diagram sources; `docs/images/*.png` are
+  their light-theme captures.
 
 ## Commands
 
 - Tests: `python3 -m unittest` (run from the repo root)
 - Validate the marketplace and plugin: `claude plugin validate . && claude plugin validate plugin`
-- Installed state: `claude plugin list` shows `supermatt@skills-dir` loaded
-  from the `~/.claude/skills/supermatt` link to `plugin/`. Edits here load in
-  the next session (or `/reload-plugins`).
+- Develop against a live install: link `plugin/` to
+  `~/.claude/skills/supermatt`; `claude plugin list` then shows
+  `supermatt@skills-dir`, and edits load in the next session (or
+  `/reload-plugins`).
 
 ## Gotchas
 

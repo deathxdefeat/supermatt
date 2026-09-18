@@ -49,9 +49,6 @@ The reviewers are still Claude, so treat the review as a second reading, not an 
 
 You need Claude Code with the `claude plugin` command (check with `claude plugin --help`), `python3` 3.9 or newer on `PATH` (standard library only), `git`, and macOS or Linux. If your issues live on GitHub or GitLab, you also need the `gh` or `glab` CLI, signed in. Your repo should have a test command: without one, the two test guardrails do nothing and verify has less evidence to work from.
 
-> [!NOTE]
-> The GitHub repository `deathxdefeat/supermatt` is private for now. Installing from it, or cloning it, needs a GitHub account with read access to it and git credentials (for example from `gh auth login`) that can reach it.
-
 ```bash
 claude plugin marketplace add deathxdefeat/supermatt
 claude plugin install supermatt@supermatt
@@ -255,6 +252,7 @@ The config names a command that the hooks run on their own, so supermatt acts on
 
 - **Trust is exact.** `supermatt init` trusts the config it writes, and `supermatt config` keeps a trusted config trusted after its own edit. Any other change (a pull, a teammate's edit, your own hand edit) needs approving again. `/supermatt:run`, `/supermatt:setup` and `/supermatt:status` show you the `test_command` and ask before trusting.
 - **You are told when supermatt is off.** An untrusted or invalid config turns the hooks off for that repo, and each session start (including after `/clear` or compaction) tells you which it is. Only the hooks go quiet: with a valid but untrusted config, the `supermatt ticket` command still applies `review_after_ticket`, because the skills call it directly.
+- **Trust covers the command, not the code it runs.** Approval pins the exact `test_command` text. If that command runs code from the repo (`npm test` runs your test files), pulling or checking out code you haven't reviewed, such as an outside pull request, means the hooks will run that code the next time Claude commits or ends a turn. Review untrusted branches before working on them with the guardrails on, or set `enforce` to `off` for that checkout.
 - **Where trust lives.** Trusted configs are listed in `~/.config/supermatt/trusted.json`, or at `$SUPERMATT_TRUST_FILE` if set. Linked worktrees share the main checkout's trust and pipeline state.
 
 ### What the hooks run
@@ -316,7 +314,7 @@ When the plugin is enabled, it is on the `PATH` of Claude's Bash tool, so Claude
 
 ## Develop
 
-To work on supermatt itself, install from a local clone (the repository is private; see [Install](#install)):
+To work on supermatt itself, install from a local clone:
 
 ```bash
 git clone https://github.com/deathxdefeat/supermatt.git
@@ -348,7 +346,6 @@ The tests drive `plugin/bin/supermatt` the way the hooks call it, in temporary g
 | `plugin/hooks/hooks.json` | The PreToolUse, Stop and SessionStart hooks, all calling `supermatt hook` |
 | `tests/` | The unit tests |
 | `CONTEXT.md`, `docs/adr/` | Project terms and design decisions |
-| `spine_check.py`, `spine-manifest.json` | Left over from before the plugin, when the source skills were installed as links. Kept as a record; the plugin doesn't use them. |
 
 ### Diagrams
 
@@ -356,4 +353,4 @@ The diagram sources are the JSON specs in `docs/diagrams/`. The images in `docs/
 
 ## Credits and licence
 
-MIT; see `LICENSE`. Most skills are adapted from Matt Pocock's [skills](https://github.com/mattpocock/skills) and Jesse Vincent's [superpowers](https://github.com/obra/superpowers), both MIT. `run`, `status`, the `advise` process, `bin/supermatt` and the hooks are original to supermatt. `plugin/NOTICE.md` has their licences and the commits the skills were imported from. The adapted skills don't follow the source repositories automatically: pulling in their changes is a manual merge.
+MIT; see `LICENSE`. Most skills are adapted from Matt Pocock's [skills](https://github.com/mattpocock/skills) and Jesse Vincent's [superpowers](https://github.com/obra/superpowers), both MIT. `run`, `status`, the `advise` process, `bin/supermatt` and the hooks are original to supermatt. `plugin/NOTICE.md` has their licences and the commits the skills were imported from. supermatt is an independent project, not affiliated with or endorsed by Matt Pocock or Jesse Vincent. The adapted skills don't follow the source repositories automatically: pulling in their changes is a manual merge.

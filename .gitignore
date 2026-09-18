@@ -1,5 +1,6 @@
 .DS_Store
 __pycache__/
+.claude/settings.local.json
 
 # Rendered diagram HTML (large); the specs in docs/diagrams/*.json are the source
 docs/diagrams/*.html

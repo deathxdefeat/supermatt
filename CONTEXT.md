@@ -1,40 +1,28 @@
 # supermatt
 
-A Claude Code plugin that turns a curated skill set into one engineering workflow: a resumable pipeline, a fused skill set and optional per-repo enforcement. It also keeps the tooling that checks the older skill spine.
+A Claude Code plugin that turns a curated skill set into one engineering workflow: a resumable pipeline, a fused skill set and optional per-repo enforcement.
 
 ## Language
-
-**Skill spine**:
-The curated set of skills installed from the source clones into the skills directory, each as a link. Retired: the plugin's fused skill set replaced it, and the links were removed.
-_Avoid_: skill set, merged set, skill config
-
-**Spine manifest**:
-The committed list of every skill the spine should contain, each with its source clone and its path inside that clone.
-_Avoid_: config, registry, inventory
-
-**Entry**:
-One skill in the spine manifest: a skill command name, a source clone and a path inside that clone.
-_Avoid_: row, item, record
 
 **Skill command name**:
 The name a skill is invoked by, which is the name of its link in the skills directory, not the `name` in its frontmatter.
 _Avoid_: skill name, slug
 
-**Source clone**:
-A local git clone that supplies spine skills: `mp` (mattpocock/skills) or `sp` (obra/superpowers).
-_Avoid_: upstream, repo, source
+**Source skills**:
+The upstream skill collections the fused skill set is adapted from: mattpocock/skills and obra/superpowers.
+_Avoid_: upstream, vendor
 
 **Skills directory**:
-The personal Claude Code skills directory the spine is installed into, normally `~/.claude/skills`.
+The personal Claude Code skills directory, normally `~/.claude/skills`. Linking `plugin/` into it loads supermatt in place for development.
 _Avoid_: skills folder, install dir
 
 **Plugin**:
-The supermatt Claude Code plugin in `plugin/`, installed as a link named `supermatt` in the skills directory and loaded as `supermatt@skills-dir`.
+The supermatt Claude Code plugin in `plugin/`, installed from this repo's marketplace as `supermatt@supermatt`, or linked into the skills directory for development as `supermatt@skills-dir`.
 _Avoid_: package, extension
 
 **Fused skill set**:
-The skills the plugin owns, invoked as `/supermatt:<name>`: adapted from the source clones, with overlapping upstream skills merged into one and cross-references rewritten to supermatt names.
-_Avoid_: spine (the spine is the older set of links to the source clones)
+The skills the plugin owns, invoked as `/supermatt:<name>`: adapted from the source skills, with overlapping upstream skills merged into one and cross-references rewritten to supermatt names.
+_Avoid_: skill pack, bundle
 
 **Pipeline**:
 The fixed sequence of stages `/supermatt:run` drives a feature through, with progress recorded so it can resume.
