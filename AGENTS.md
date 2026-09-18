@@ -7,11 +7,16 @@ supermatt-specific truth.
 ## State
 
 New local git repository on `main`, with no remote configured. Commits stay local
-until a remote is added. The repo has no stack, commands, architecture or
-product contracts yet. Do not infer or invent them.
+until a remote is added. The only stack is Python 3, standard library only, for
+the spine-check command. There is no typechecker. There is no other
+architecture or product contract yet. Do not infer or invent them.
 
 As they become real, add Overview, Commands, Architecture, Conventions and
 Gotchas sections here. Run every command before documenting it.
+
+## Commands
+
+- Tests: `python3 -m unittest` (run from the repo root)
 
 ## Agent skills
 
