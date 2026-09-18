@@ -1,0 +1,44 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "The end-of-turn check",
+    "locale": "en",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "done", "label": "Turn ends" },
+    { "id": "checks", "label": "Checks, in order" },
+    { "id": "limit", "label": "Block limit" },
+    { "id": "warned", "label": "Limit reached", "variant": "exception" }
+  ],
+  "mainPath": ["start", "q_question", "q_review", "q_implementing", "q_tests", "q_three", "blocked"],
+  "semanticChecks": {
+    "allowedRoots": ["start"],
+    "allowedTerminals": ["ends", "blocked", "warn"]
+  },
+  "nodes": [
+    { "id": "start", "lane": "checks", "col": 0, "type": "external", "label": "Claude tries to stop", "sublabel": "end of its turn", "width": 160 },
+    { "id": "q_question", "lane": "checks", "col": 1, "type": "backend", "label": "Blocked on a question?", "sublabel": "current ticket, for you", "width": 160 },
+    { "id": "q_review", "lane": "checks", "col": 2, "type": "backend", "label": "Waiting for review?", "sublabel": "a committed ticket", "width": 160 },
+    { "id": "q_implementing", "lane": "checks", "col": 3, "type": "backend", "label": "Still implementing?", "sublabel": "current ticket", "width": 160 },
+    { "id": "q_tests", "lane": "checks", "col": 4, "type": "backend", "label": "Tests fail?", "sublabel": "uncommitted changes", "width": 160 },
+    { "id": "ends", "lane": "done", "col": 3, "type": "external", "label": "Turn ends", "width": 160 },
+    { "id": "q_three", "lane": "limit", "col": 4, "type": "security", "label": "Blocked 3 times?", "sublabel": "in a row", "width": 160 },
+    { "id": "blocked", "lane": "limit", "col": 5, "type": "security", "label": "Turn blocked", "sublabel": "Claude is told why", "tag": "keeps working", "width": 160 },
+    { "id": "warn", "lane": "warned", "col": 4, "type": "messagebus", "label": "Turn ends", "sublabel": "with a warning to you", "width": 160 }
+  ],
+  "edges": [
+    { "id": "start-question", "from": "start", "to": "q_question", "variant": "emphasis" },
+    { "id": "question-yes", "from": "q_question", "to": "ends", "label": "yes", "role": "branch" },
+    { "id": "question-no", "from": "q_question", "to": "q_review", "label": "no", "variant": "emphasis" },
+    { "id": "review-yes", "from": "q_review", "to": "q_three", "label": "yes", "role": "branch" },
+    { "id": "review-no", "from": "q_review", "to": "q_implementing", "label": "no", "variant": "emphasis" },
+    { "id": "implementing-yes", "from": "q_implementing", "to": "ends", "label": "yes", "role": "branch" },
+    { "id": "implementing-no", "from": "q_implementing", "to": "q_tests", "label": "no", "variant": "emphasis" },
+    { "id": "tests-no", "from": "q_tests", "to": "ends", "label": "no", "role": "branch" },
+    { "id": "tests-yes", "from": "q_tests", "to": "q_three", "label": "yes", "variant": "emphasis" },
+    { "id": "three-no", "from": "q_three", "to": "blocked", "label": "no", "variant": "emphasis" },
+    { "id": "three-yes", "from": "q_three", "to": "warn", "label": "yes", "variant": "security", "role": "error" }
+  ]
+}

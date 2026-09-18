@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "Config trust",
+    "locale": "en",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Trust states"
+    },
+    {
+      "id": "incoming",
+      "label": "Shared config"
+    }
+  ],
+  "states": [
+    {
+      "id": "init",
+      "type": "start",
+      "label": "supermatt init",
+      "sublabel": "writes the config",
+      "lane": "main",
+      "col": 0
+    },
+    {
+      "id": "trusted",
+      "type": "active",
+      "label": "Trusted",
+      "sublabel": "hooks enforce the rules",
+      "lane": "main",
+      "col": 1
+    },
+    {
+      "id": "untrusted",
+      "type": "neutral",
+      "label": "Untrusted",
+      "sublabel": "hooks stay off",
+      "lane": "main",
+      "col": 3
+    },
+    {
+      "id": "arrives",
+      "type": "start",
+      "label": "Clone or pull",
+      "sublabel": "a config arrives",
+      "lane": "incoming",
+      "col": 1
+    }
+  ],
+  "transitions": [
+    {
+      "id": "init-trusts",
+      "from": "init",
+      "to": "trusted"
+    },
+    {
+      "id": "edited",
+      "from": "trusted",
+      "to": "untrusted",
+      "label": "edited outside supermatt config"
+    },
+    {
+      "id": "retrusted",
+      "from": "untrusted",
+      "to": "trusted",
+      "label": "reviewed, then supermatt trust",
+      "route": "top-channel"
+    },
+    {
+      "id": "arrives-untrusted",
+      "from": "arrives",
+      "to": "untrusted"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "How trust moves",
+      "items": [
+        "A config written by supermatt init starts trusted",
+        "A config that arrives by clone or pull starts untrusted",
+        "Neither state is terminal"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "How the pieces fit",
+    "locale": "en",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "you", "type": "external", "label": "You", "pos": [40, 300], "size": [130, 64] },
+    { "id": "skills", "type": "frontend", "label": "Skills", "sublabel": "/supermatt:run and others", "pos": [260, 300], "size": [200, 64] },
+    { "id": "hooks", "type": "backend", "label": "Claude Code hooks", "sublabel": "commit, edit, end of turn, session start", "pos": [600, 110], "size": [280, 64] },
+    { "id": "command", "type": "backend", "label": "supermatt command", "pos": [650, 300], "size": [180, 64] },
+    { "id": "config", "type": "database", "label": ".supermatt/config.json", "sublabel": "options, committed", "tag": "approved per machine", "pos": [980, 150], "size": [230, 64] },
+    { "id": "state", "type": "database", "label": ".supermatt/state.json", "sublabel": "progress, local, gitignored", "pos": [980, 300], "size": [230, 64] },
+    { "id": "tests", "type": "external", "label": "your test_command", "pos": [980, 450], "size": [230, 64] }
+  ],
+  "connections": [
+    { "id": "you-to-skills", "from": "you", "to": "skills", "label": "invokes", "variant": "emphasis" },
+    { "id": "skills-to-command", "from": "skills", "to": "command", "label": "record stages, tickets", "variant": "emphasis" },
+    { "id": "hooks-to-command", "from": "hooks", "to": "command", "label": "calls", "labelDy": 24 },
+    { "id": "command-to-config", "from": "command", "to": "config", "label": "options" },
+    { "id": "command-to-state", "from": "command", "to": "state", "label": "progress", "labelDx": 34 },
+    { "id": "command-to-tests", "from": "command", "to": "tests", "label": "runs it" }
+  ]
+}

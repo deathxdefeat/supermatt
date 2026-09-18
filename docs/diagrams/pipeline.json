@@ -1,0 +1,198 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "The supermatt pipeline",
+    "locale": "en",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "agree",
+      "label": "Agree what to build"
+    },
+    {
+      "id": "build",
+      "label": "Build it, then ship"
+    }
+  ],
+  "groups": [
+    {
+      "id": "plan",
+      "label": "Plan",
+      "lane": "agree",
+      "fromCol": 1,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "each_ticket",
+      "label": "implement: each ticket",
+      "lane": "build",
+      "fromCol": 1,
+      "toCol": 2,
+      "variant": "dashed"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "idea",
+      "lane": "agree",
+      "col": 0,
+      "type": "external",
+      "label": "Your feature",
+      "sublabel": "you describe it",
+      "width": 132
+    },
+    {
+      "id": "grill",
+      "lane": "agree",
+      "col": 1,
+      "type": "backend",
+      "label": "grill",
+      "sublabel": "agree the design",
+      "width": 132
+    },
+    {
+      "id": "spec",
+      "lane": "agree",
+      "col": 2,
+      "type": "backend",
+      "label": "spec",
+      "sublabel": "write it down",
+      "width": 132
+    },
+    {
+      "id": "tickets",
+      "lane": "agree",
+      "col": 3,
+      "type": "backend",
+      "label": "tickets",
+      "sublabel": "slice the work",
+      "width": 132
+    },
+    {
+      "id": "pause_plan",
+      "lane": "agree",
+      "col": 4,
+      "type": "security",
+      "label": "Pause",
+      "sublabel": "you read the spec and tickets",
+      "tag": "approval gate",
+      "width": 176
+    },
+    {
+      "id": "code",
+      "lane": "build",
+      "col": 1,
+      "type": "backend",
+      "label": "Test, then code",
+      "sublabel": "failing test first",
+      "width": 132
+    },
+    {
+      "id": "review",
+      "lane": "build",
+      "col": 2,
+      "type": "backend",
+      "label": "Review and fix",
+      "width": 132
+    },
+    {
+      "id": "verify",
+      "lane": "build",
+      "col": 3,
+      "type": "backend",
+      "label": "verify",
+      "sublabel": "check every requirement",
+      "width": 164
+    },
+    {
+      "id": "pause_evidence",
+      "lane": "build",
+      "col": 4,
+      "type": "security",
+      "label": "Pause",
+      "sublabel": "you check the evidence",
+      "tag": "approval gate",
+      "width": 164
+    },
+    {
+      "id": "finish",
+      "lane": "build",
+      "col": 5,
+      "type": "backend",
+      "label": "finish",
+      "sublabel": "merge, pull request or keep the branch",
+      "width": 180
+    }
+  ],
+  "edges": [
+    {
+      "id": "describe",
+      "from": "idea",
+      "to": "grill"
+    },
+    {
+      "id": "to-spec",
+      "from": "grill",
+      "to": "spec"
+    },
+    {
+      "id": "to-tickets",
+      "from": "spec",
+      "to": "tickets"
+    },
+    {
+      "id": "to-pause-plan",
+      "from": "tickets",
+      "to": "pause_plan"
+    },
+    {
+      "id": "to-implement",
+      "from": "pause_plan",
+      "to": "code",
+      "variant": "emphasis"
+    },
+    {
+      "id": "commit",
+      "from": "code",
+      "to": "review",
+      "label": "commit"
+    },
+    {
+      "id": "to-verify",
+      "from": "review",
+      "to": "verify"
+    },
+    {
+      "id": "gap-found",
+      "from": "verify",
+      "to": "code",
+      "label": "gap found, add a ticket",
+      "variant": "dashed",
+      "role": "return"
+    },
+    {
+      "id": "to-pause-evidence",
+      "from": "verify",
+      "to": "pause_evidence"
+    },
+    {
+      "id": "to-finish",
+      "from": "pause_evidence",
+      "to": "finish",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Two pauses",
+      "items": [
+        "Approval gates where you give the go-ahead",
+        "Default pause points: before implement and before finish"
+      ]
+    }
+  ]
+}

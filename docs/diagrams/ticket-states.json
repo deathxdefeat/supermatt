@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "Ticket states",
+    "locale": "en",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Ticket path"
+    },
+    {
+      "id": "waiting",
+      "label": "Waiting on you"
+    }
+  ],
+  "states": [
+    {
+      "id": "ticket-start",
+      "type": "start",
+      "label": "Ticket starts",
+      "lane": "main",
+      "col": 0
+    },
+    {
+      "id": "implementing",
+      "type": "active",
+      "label": "implementing",
+      "lane": "main",
+      "col": 1
+    },
+    {
+      "id": "needs-review",
+      "type": "active",
+      "label": "needs-review",
+      "lane": "main",
+      "col": 3
+    },
+    {
+      "id": "done",
+      "type": "success",
+      "label": "done",
+      "sublabel": "terminal",
+      "lane": "main",
+      "col": 4
+    },
+    {
+      "id": "blocked",
+      "type": "waiting",
+      "label": "blocked",
+      "sublabel": "waiting, not a failure",
+      "lane": "waiting",
+      "col": 0
+    }
+  ],
+  "transitions": [
+    {
+      "id": "start-work",
+      "from": "ticket-start",
+      "to": "implementing"
+    },
+    {
+      "id": "work-committed",
+      "from": "implementing",
+      "to": "needs-review",
+      "label": "work committed"
+    },
+    {
+      "id": "review-done",
+      "from": "needs-review",
+      "to": "done",
+      "label": "review fixes its findings",
+      "labelDy": -25
+    },
+    {
+      "id": "impl-asks",
+      "from": "implementing",
+      "to": "blocked",
+      "label": "Claude asks you something",
+      "fromSide": "bottom",
+      "toSide": "left",
+      "labelSegment": 0
+    },
+    {
+      "id": "review-asks",
+      "from": "needs-review",
+      "to": "blocked",
+      "label": "Claude asks you something",
+      "fromSide": "bottom",
+      "toSide": "right",
+      "labelSegment": 0
+    },
+    {
+      "id": "answer-impl",
+      "from": "blocked",
+      "to": "implementing",
+      "label": "you answer",
+      "fromSide": "top",
+      "toSide": "right",
+      "labelSegment": 0,
+      "labelDx": -38
+    },
+    {
+      "id": "answer-review",
+      "from": "blocked",
+      "to": "needs-review",
+      "label": "you answer",
+      "fromSide": "top",
+      "toSide": "left",
+      "labelSegment": 0,
+      "labelDx": 38
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Reading the states",
+      "items": [
+        "Blocked is a waiting state, not a failure",
+        "done is terminal"
+      ]
+    }
+  ]
+}

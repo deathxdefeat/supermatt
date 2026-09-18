@@ -1,2 +1,5 @@
 .DS_Store
 __pycache__/
+
+# Archify HTML renders (large); the specs in docs/diagrams/*.json are the source
+docs/diagrams/*.html

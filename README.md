@@ -28,24 +28,7 @@ The evidence is only as strong as your test command (see [Limits](#limits)). For
 
 `/supermatt:run` takes a feature through six stages, each run by the skill of the same name, and the implement stage also calls `/supermatt:review` after each ticket.
 
-```mermaid
-flowchart TD
-    idea(["You describe a feature"]) --> plan
-    subgraph plan ["Plan"]
-        direction LR
-        grill["grill: agree the design"] --> spec["spec: write it down"] --> tickets["tickets: slice the work"]
-    end
-    plan --> pause1{{"Pause: you read the spec and tickets"}}
-    pause1 --> build_loop
-    subgraph build_loop ["implement: repeat for each ticket"]
-        direction LR
-        build["failing test, then code"] --> commit["commit"] --> review["review and fix"]
-    end
-    build_loop --> verify["verify: check every requirement"]
-    verify -->|"gap found, add a ticket"| build_loop
-    verify --> pause2{{"Pause: you check the evidence"}}
-    pause2 --> finish["finish: merge, pull request or keep the branch"]
-```
+![The supermatt pipeline: grill, spec and tickets, a pause, then test, commit and review for each ticket, verify, a second pause, and finish](docs/images/pipeline.png)
 
 *The pipeline `/supermatt:run` drives. The hexagons are the two default pauses, where Claude summarises the last stage and waits for your go-ahead. Both pauses are [options](#pipeline-and-other-options).*
 
@@ -201,16 +184,7 @@ Each repo keeps its options in `.supermatt/config.json`, which you commit so the
 
 The guardrails work from each ticket's state, which the skills record as they go.
 
-```mermaid
-flowchart LR
-    start(["ticket starts"]) --> impl["implementing"]
-    impl -->|"work committed"| rev["needs-review"]
-    rev -->|"review fixes its findings"| fin(["done"])
-    impl -->|"Claude asks you something"| blk["blocked"]
-    rev -->|"Claude asks you something"| blk
-    blk -.->|"you answer"| impl
-    blk -.->|"you answer"| rev
-```
+![Ticket states: implementing, needs-review, done, and blocked while Claude waits on your answer](docs/images/ticket-states.png)
 
 *The state supermatt records for each ticket. `blocked` means Claude is waiting on you; once you answer, the ticket returns to whichever state it came from.*
 
@@ -240,20 +214,7 @@ A ticket's id is its local file number (`01`) or its issue number on a hosted tr
 
 This is the check that stops Claude from ending a turn with work unfinished.
 
-```mermaid
-flowchart TD
-    stop(["Claude tries to end its turn"]) --> q1("Is the current ticket blocked on a question for you?")
-    q1 -->|yes| ends(["Turn ends"])
-    q1 -->|no| q2("Is a committed ticket waiting for review?")
-    q2 -->|no| q3("Is the current ticket still implementing?")
-    q3 -->|yes| ends
-    q3 -->|no| q4("Do uncommitted changes fail the tests?")
-    q4 -->|no| ends
-    q2 -->|yes| q5
-    q4 -->|yes| q5("Has it blocked three times in a row?")
-    q5 -->|no| held(["Turn blocked: Claude is told why and keeps working"])
-    q5 -->|yes| warned(["Turn ends with a warning to you"])
-```
+![The end-of-turn check: the questions supermatt asks before letting Claude end its turn](docs/images/end-of-turn.png)
 
 *Shown with `review_after_ticket` and `green_before_stop` at `block`. At `warn`, the turn ends with a warning to you instead of being blocked.*
 
@@ -288,13 +249,7 @@ supermatt config test_command "npm test"
 
 The config names a command that the hooks run on their own, so supermatt acts on a repo's config only after this machine has approved it. Without that check, cloning a repo could make Claude Code run any command the repo's author chose, the next time Claude commits or ends a turn.
 
-```mermaid
-flowchart LR
-    init["supermatt init writes the config"] --> trusted(["Trusted: hooks enforce the rules"])
-    arrive["A config arrives by clone or pull"] --> untrusted(["Untrusted: hooks stay off"])
-    trusted -->|"edited other than by supermatt config"| untrusted
-    untrusted -->|"you review it and run supermatt trust"| trusted
-```
+![Config trust: configs written by supermatt init are trusted, configs arriving by clone or pull stay off until you run supermatt trust](docs/images/trust.png)
 
 *Trust records the repo's path and a SHA-256 hash of the config's exact contents, so any change made outside `supermatt config` has to be approved again.*
 
@@ -341,15 +296,7 @@ Apart from your `test_command`, which runs through the shell in the repo root an
 
 The skills and hooks work through `plugin/bin/supermatt`, a single standard-library Python script that reads your options, records progress and runs your tests.
 
-```mermaid
-flowchart TD
-    you(["You"]) -->|"/supermatt:run and other skills"| skills["Skills"]
-    hooks["Claude Code hooks: commit, edit, end of turn, session start"] --> cmd
-    skills -->|"record stages and tickets"| cmd["supermatt command"]
-    cmd -->|"options (committed, approved per machine)"| config[".supermatt/config.json"]
-    cmd -->|"progress, local"| state[".supermatt/state.json"]
-    cmd -->|"runs"| tests["your test_command"]
-```
+![How the pieces fit: skills and hooks call the supermatt command, which reads the config, writes the state file and runs your test command](docs/images/command.png)
 
 When the plugin is enabled, it is on the `PATH` of Claude's Bash tool, so Claude can run any of these commands when you ask. It is not on your own terminal's `PATH`. To run it there, call `python3 <plugin dir>/bin/supermatt <command>` from inside a repo, where `<plugin dir>` is `~/.claude/plugins/cache/supermatt/supermatt/<version>` for a marketplace install, or `<clone>/plugin` for a local clone or link. If unsure, ask Claude to run `command -v supermatt` for the full path. It acts on the git repo that contains the current directory.
 
@@ -402,6 +349,10 @@ The tests drive `plugin/bin/supermatt` the way the hooks call it, in temporary g
 | `tests/` | The unit tests |
 | `CONTEXT.md`, `docs/adr/` | Project terms and design decisions |
 | `spine_check.py`, `spine-manifest.json` | Left over from before the plugin, when the source skills were installed as links. Kept as a record; the plugin doesn't use them. |
+
+### Diagrams
+
+The diagrams are drawn with [Archify](https://github.com/tt-a1i/archify). Their sources are the JSON specs in `docs/diagrams/`, and the images in `docs/images/` are light-theme captures of the rendered diagrams.
 
 ## Credits and licence
 
