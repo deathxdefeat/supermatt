@@ -217,5 +217,14 @@ class SpineCheckTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(out.getvalue(), "PASS using-git-worktrees: -> %s\n" % os.path.realpath(target))
 
+    def test_committed_manifest_has_23_entries_with_valid_clones_and_relative_paths(self):
+        with open(spine_check.MANIFEST) as f:
+            entries = json.load(f)["skills"]
+
+        self.assertEqual(len(entries), 23)
+        for entry in entries:
+            self.assertIn(entry["clone"], ("mp", "sp"), entry)
+            self.assertFalse(os.path.isabs(entry["path"]), entry)
+
 if __name__ == "__main__":
     unittest.main()
