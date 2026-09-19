@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.0
+
+`/supermatt:advise` and `/supermatt:setup` catch the mistakes found in two real planning sessions:
+
+- `advise` checks the test command as a guardrail. Does it run the kind of test the plan's outcomes need, such as browser tests for browser-level outcomes? Does it test current code rather than an old build? Is it stable? Is it too slow to run at the end of every turn?
+- `advise` compares the tool versions the repo pins with what's installed, and makes a mismatch the first step of the plan.
+- `advise` reads the repo's and your own standing rules, for example pushing straight to `main`, rules about review, or a release step, and sets the options to match.
+- `advise` checks its plan before giving it to you. Every problem it found must be a step or a named risk. The options must match the steps (for example, a `/clear` between tickets and building needs a pause before `implement`). Every promised outcome must be proven by a named command, and the guardrails must suit the test suite.
+- `advise` now starts its plan with a **Settings** block listing every supermatt setting the plan relies on, each with its reason. It shows conflicts between your repo's rules and your global rules for you to decide. It knows how pauses, `--from` entry points and finish modes actually behave, and phrases option changes as setup answers rather than commands you can't run.
+- New `pipeline.finish: push` merges, runs the tests, then pushes the base branch, for teams that push straight to `main`. `finish` shows a repo's documented release step (such as a promote command) and runs it only when you say go.
+- New `pipeline.branch_prefix` names feature branches the way your repo requires, for example `claude/<feature>`.
+- `advise` includes a table showing which `pause_at` stage gives you which review. It picks a toolchain switch command that works on your machine, reads recent test failure records, gives firm settings, and leaves to you only the checks that need your eyes.
+- `tickets` labels tickets that wait on a decision only you can make as `needs-info`, and `run` skips them until you answer.
+- `setup` checks the pinned tool versions and your standing rules. It runs the test command twice to catch flaky tests, and includes the browser tests in the test command when the repo has them, and raises `test_timeout` when the suite needs more than 300 seconds.
+
 ## 0.2.0
 
 - `/supermatt:run --from spec|tickets|implement|verify` starts a feature partway through, for work that was already planned outside the pipeline (an audit, a design doc, an existing spec or tickets). The pipeline still records its progress, so the work can be resumed. The `supermatt start` command takes a matching `--stage` option.

@@ -41,6 +41,7 @@ DEFAULTS = {
         "interview": "full",
         "pause_at": ["implement", "finish"],
         "branch": True,
+        "branch_prefix": "",
         "worktree": False,
         "ticket_agents": False,
         "finish": "ask",
@@ -49,7 +50,7 @@ DEFAULTS = {
 }
 CHOICES = {
     "pipeline.interview": ("full", "auto"),
-    "pipeline.finish": ("ask", "merge", "pr", "keep"),
+    "pipeline.finish": ("ask", "merge", "push", "pr", "keep"),
     **{"enforce." + r: LEVELS for r in RULES},
 }
 MAX_STOP_BLOCKS = 3
@@ -145,6 +146,9 @@ def config_problems(config):
     pause_at = config["pipeline"]["pause_at"]
     if not (isinstance(pause_at, list) and all(s in STAGES for s in pause_at)):
         problems.append(f"pipeline.pause_at must be a list of stages ({', '.join(STAGES)})")
+    if not (isinstance(config["pipeline"]["branch_prefix"], str)
+            and re.fullmatch(r"[A-Za-z0-9._/-]*", config["pipeline"]["branch_prefix"])):
+        problems.append("pipeline.branch_prefix must be a string of letters, digits and . _ / -")
     for name in ("branch", "worktree", "ticket_agents"):
         if not isinstance(config["pipeline"][name], bool):
             problems.append(f"pipeline.{name} must be true or false")
@@ -267,6 +271,10 @@ def parse_value(key, current, text):
         return stages
     if key == "exempt":
         return [p for p in text.split(",") if p]
+    if key == "pipeline.branch_prefix":
+        if not re.fullmatch(r"[A-Za-z0-9._/-]*", text):
+            raise UsageError("pipeline.branch_prefix may only use letters, digits and . _ / -")
+        return text
     if isinstance(current, bool):
         if text not in ("true", "false"):
             raise UsageError(f"{key} must be true or false")
@@ -319,7 +327,7 @@ def cmd_status(args, root):
     print("enforce: " + ", ".join(f"{r}={config['enforce'][r]}" for r in RULES))
     p = config["pipeline"]
     print(f"pipeline: interview={p['interview']} pause_at={','.join(p['pause_at']) or '-'} "
-          f"branch={str(p['branch']).lower()} worktree={str(p['worktree']).lower()} "
+          f"branch={str(p['branch']).lower()}{' (prefix ' + p['branch_prefix'] + ')' if p['branch_prefix'] else ''} worktree={str(p['worktree']).lower()} "
           f"ticket_agents={str(p['ticket_agents']).lower()} finish={p['finish']}")
 
 

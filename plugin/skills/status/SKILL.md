@@ -13,7 +13,7 @@ argument-hint: "[<option> <value> | preset <name> | trust]"
    - A whole preset: `SM config preset strict|standard|light|off`
    - One rule: `SM config enforce.<rule> off|warn|block`, where rule is `tests_before_commit`, `ticket_before_code`, `review_after_ticket` or `green_before_stop`
    - The test command: `SM config test_command "<cmd>"` (run it once first to confirm it works); `SM config test_timeout <seconds>` (at most 570)
-   - Pipeline behaviour: `SM config pipeline.interview full|auto`; `SM config pipeline.pause_at <stage,stage>` (stages to pause before: grill, spec, tickets, implement, verify, finish; `none` never pauses); `SM config pipeline.branch|worktree|ticket_agents true|false`; `SM config pipeline.finish ask|merge|pr|keep`
+   - Pipeline behaviour: `SM config pipeline.interview full|auto`; `SM config pipeline.pause_at <stage,stage>` (stages to pause before: grill, spec, tickets, implement, verify, finish; `none` never pauses); `SM config pipeline.branch|worktree|ticket_agents true|false`; `SM config pipeline.branch_prefix <prefix>` (for example `claude/`); `SM config pipeline.finish ask|merge|push|pr|keep`
    - Paths the code rules ignore: `SM config exempt "<glob>,<glob>"` (replaces the list)
 3. `.supermatt/config.json` is committed, so an option change is a repo change: mention that it shows up in `git status`, and that teammates approve the new config with `supermatt trust` after they pull it.
 

@@ -26,6 +26,8 @@ Look at the current repo to understand its starting state. Read whatever exists;
 - `docs/adr/` and any `src/*/docs/adr/` directories
 - `docs/agents/`: does this skill's prior output already exist?
 - `.scratch/`: a sign that a local-markdown issue tracker convention is already in use
+- The toolchain pins (`.nvmrc`, `.node-version`, `.tool-versions`, `engines`, `packageManager`, `.python-version`, `rust-toolchain`) against what is installed. If they don't match, tell the user and switch versions (or ask them to) before confirming the test command. A test run on the wrong version proves nothing.
+- The user's standing rules in `AGENTS.md`/`CLAUDE.md` (and any global instructions you were given) that bear on the options: pushing straight to the main branch means `pipeline.branch false`; rules about review, subagents or releases affect the preset, `ticket_agents` and `finish`.
 - `.supermatt/config.json`: is the repo already set up, and does this machine trust its config? (`"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" status`). A config that exists but is not trusted came from a clone or pull: show the user its `test_command`, and on their OK run `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" trust` instead of re-running setup.
 - The test command: `package.json` scripts, `Makefile`, `pyproject.toml`, `Cargo.toml`, `go.mod`, the repo's `AGENTS.md`/`CLAUDE.md` commands section, CI config. Run the candidate once to confirm it works before proposing it.
 - Monorepo signals: a `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or a populated `packages/*` with its own `src/`. These are present only in a genuinely large multi-package repo; their absence means single-context, which is almost every repo.
@@ -59,7 +61,7 @@ The defaults are the five canonical roles, each label string equal to its name: 
 
 Offer **multi-context** (a root `CONTEXT-MAP.md` pointing to per-context `CONTEXT.md` files) only when exploration found monorepo signals. Then confirm which layout they want.
 
-**Section D: Test command.** Propose the command you confirmed in exploration. Check that it tests the current source, not a stale artifact: an end-to-end suite that serves a production build (for example Playwright starting `next start`) needs the build step in the command (`npm run build && npm run test:e2e`). Time the confirming run: the command must finish within `test_timeout` (at most 570 seconds). It is what the enforcement rules and the `verify` stage run. If the repo has no tests yet, record none: the test rules then stay quiet until one is set with `supermatt config test_command "<cmd>"`.
+**Section D: Test command.** Propose the command you confirmed in exploration. Check that it tests the current source, not a stale artifact: an end-to-end suite that serves a production build (for example Playwright starting `next start`) needs the build step in the command (`npm run build && npm run test:e2e`). Time the confirming run: the command must finish within `test_timeout`. The default is 300 seconds; set it higher with `supermatt config test_timeout <seconds>` (at most 570) when the run needs more, leaving some headroom. Run it a second time if that's affordable: a result that changes between runs means a flaky test. Name it to the user, because `tests_before_commit` will block commits at random until it's fixed. Make sure the command covers the level the repo's work is checked at: if the repo has browser or end-to-end tests for its main flows, include them (or the relevant subset) when they fit the time limit, rather than unit tests alone. It is what the enforcement rules and the `verify` stage run. If the repo has no tests yet, record none: the test rules then stay quiet until one is set with `supermatt config test_command "<cmd>"`.
 
 **Section E: Enforcement preset.** Ask one question, recommending **standard**:
 
@@ -82,11 +84,11 @@ When the confirming run was slow (a build plus an end-to-end suite, say over a m
 **Section F: Pipeline options.** Show the defaults and ask whether to keep them (recommended: **yes**):
 
 - `pipeline.interview`: `full` (the grilling waits for the user's answers) or `auto` (it settles every question with its recommended answer and records them as assumed decisions in the spec)
-- `pipeline.pause_at`: stages `/supermatt:run` pauses *before*, waiting for the user's go-ahead. Default `implement,finish`: check the spec and tickets before code is written, and the verify evidence before anything is merged. Stages: `grill`, `spec`, `tickets`, `implement`, `verify`, `finish`; `none` never pauses.
-- `pipeline.branch`: create a `<feature-slug>` branch before implementing (default `true`; set `false` for teams that commit straight to the main branch)
+- `pipeline.pause_at`: stages `/supermatt:run` pauses *before*, waiting for the user's go-ahead. To review the spec and tickets before code, include `implement`; `tickets` stops before the tickets exist. Default `implement,finish`: check the spec and tickets before code is written, and the verify evidence before anything is merged. Stages: `grill`, `spec`, `tickets`, `implement`, `verify`, `finish`; `none` never pauses.
+- `pipeline.branch`: create a `<branch_prefix><feature-slug>` branch before implementing (default `true`; set `false` for teams that commit straight to the main branch). `pipeline.branch_prefix` (default empty) follows the repo's branch naming rule, for example `claude/`.
 - `pipeline.worktree`: implement in an isolated worktree via `/supermatt:worktree` (default `false`)
 - `pipeline.ticket_agents`: build each ticket in a fresh subagent instead of this context (default `false`)
-- `pipeline.finish`: `ask` (show the merge / PR / keep menu), or always `merge`, `pr` or `keep`
+- `pipeline.finish`: `ask` (show the merge / PR / keep menu), or always `merge`, `push` (merge, test, then push the base branch, for teams that push straight to main), `pr` or `keep`
 
 ### 3. Confirm and edit
 

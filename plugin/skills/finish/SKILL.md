@@ -53,7 +53,7 @@ Confirm before merging: merging into the wrong base is expensive to undo.
 
 ## Step 4: Present Options
 
-**Preset choice.** When the repo is set up for supermatt and `pipeline.finish` is `merge`, `pr` or `keep`, that is the user's standing choice: skip the menu and execute option 1, 2 or 3 respectively (a detached HEAD cannot merge, so `merge` falls back to the menu). `ask` (the default) shows the menu.
+**Preset choice.** When the repo is set up for supermatt and `pipeline.finish` is `merge`, `pr`, `keep` or `push`, that is the user's standing choice: skip the menu and execute option 1, 2 or 3, or "Merge and push" below (a detached HEAD cannot merge, so `merge` and `push` fall back to the menu). `ask` (the default) shows the menu.
 
 **Normal repo and named-branch worktree — present exactly these 3 options:**
 
@@ -131,6 +131,14 @@ Keep the worktree — the user iterates on PR feedback there.
 ### Option 3: Keep As-Is
 
 Report: "Keeping branch <name>. Worktree preserved at <path>."
+
+### Merge and push (`pipeline.finish: push`)
+
+For users who integrate by pushing straight to the base branch. Do Option 1 (merge locally, then run the tests on the merged result). Then, once the result is green, push the base branch to its upstream (`git push`), never with force. When the work was done on the base branch itself (`pipeline.branch: false`), there is nothing to merge: run the tests, then push. If the push is rejected because the remote moved, pull with `--ff-only` or rebase, rerun the tests, and push again. Never force-push.
+
+### The repo's release step
+
+Some repos release separately from integrating. For example, a push builds production but a promote command makes it live. When the repo's `AGENTS.md`/`CLAUDE.md` documents such a step, show the user the exact command after integrating, and run it only when they say go. It is outward-facing and theirs to approve.
 
 ### If the user asks to discard the work
 
@@ -229,4 +237,4 @@ place. If your platform provides a workspace-exit tool, use it.
 
 ## After integrating
 
-When `/supermatt:run` drives this, record the outcome: `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" stage done` once the work is merged, a pull request is open, or the user chose to keep the branch.
+When `/supermatt:run` drives this, record the outcome: `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" stage done` once the work is merged (and pushed, for `push`), a pull request is open, or the user chose to keep the branch.

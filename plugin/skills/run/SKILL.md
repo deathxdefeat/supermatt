@@ -22,7 +22,7 @@ Run `SM status --json`.
 
 **Starting later with `--from`.** When the earlier stages already happened outside the pipeline (an audit, a design doc, a plan made in this conversation, an existing spec or tickets), start the feature at a later stage instead of grilling again: `SM start <slug> --stage <stage>`, then continue from that stage below. What each start point expects:
 
-- `--from spec`: the design is already settled in this conversation or in a document the user names. The spec stage synthesises from that; any open question it can't answer from the material goes to the user before the spec is published.
+- `--from spec`: the design is already settled in this conversation or in a document the user names. The spec stage synthesises from that. An open question that blocks the whole spec goes to the user before the spec is published. One that only affects some tickets is recorded in the spec as an open decision, and those tickets become `needs-info`.
 - `--from tickets`: a spec already exists. Get its path or URL from the user if they didn't give it, and pass it to the tickets stage.
 - `--from implement`: tickets already exist on the tracker. Read them first; any ticket without acceptance criteria or seams under test gets them added (with the user's OK on a hosted tracker) before the ticket loop starts.
 - `--from verify`: the work is built and needs verifying against its spec before finishing.
@@ -34,7 +34,7 @@ Run `SM status --json`.
 
 **Pausing.** `pause_at` lists stages to pause *before*. Before starting a listed stage, stop: summarise what the previous stage produced in a few lines, name the next stage, and wait for the user's go-ahead. The default, `implement,finish`, lets the user check the spec and tickets before any code is written, and check the verify evidence before anything is merged.
 
-Never pause before the stage this invocation starts or resumes at: the user just asked for it. Record each stage with `SM stage <stage>` as you start it.
+Pauses happen only between stages, once each. There is no pause between tickets inside `implement`: work the user wants to review or release in separate batches needs a separate feature (a separate `run`) per batch. Never pause before the stage this invocation starts or resumes at: the user just asked for it. Record each stage with `SM stage <stage>` as you start it.
 
 **Ticket ids.** A ticket's id is its local file number (`01`, `02`, ...) or its issue number on a hosted tracker (`123`, no `#`). Use the same id with every `SM ticket` call.
 
@@ -56,11 +56,11 @@ Keep the grill, spec and tickets stages in one unbroken context: the spec and ti
 
 `SM stage implement`.
 
-**Workspace, once per feature.** Record where the work will merge back: `SM base <current branch>`. Then, if `pipeline.worktree` is true, call the Skill tool with "supermatt:worktree" (the option is the user's consent to create one). Otherwise, if `pipeline.branch` is true and you are on the base branch, create and switch to a `<slug>` branch.
+**Workspace, once per feature.** Record where the work will merge back: `SM base <current branch>`. Then, if `pipeline.worktree` is true, call the Skill tool with "supermatt:worktree" (the option is the user's consent to create one). Otherwise, if `pipeline.branch` is true and you are on the base branch, create and switch to a `<branch_prefix><slug>` branch.
 
 **Ticket loop.** Repeat until every ticket is done:
 
-1. Pick the next ticket: the lowest-numbered open ticket whose blockers are all done (per the tracker and `SM status`). A ticket already `implementing`, `blocked` or `needs-review` in `SM status` is resumed first.
+1. Pick the next ticket: the lowest-numbered open ticket whose blockers are all done (per the tracker and `SM status`). A ticket already `implementing`, `blocked` or `needs-review` in `SM status` is resumed first. Skip tickets marked `needs-info` (they wait on a decision from the user). When only `needs-info` tickets are left, stop and ask the user for the missing decisions.
 2. Build it:
    - `pipeline.ticket_agents` false → call the Skill tool with "supermatt:implement" with the ticket. It records `implementing`, builds test-first, commits, records `needs-review`, and hands the ticket to "supermatt:review", which fixes findings and records `done`.
    - `pipeline.ticket_agents` true → dispatch one general-purpose subagent per ticket, in sequence, with a prompt that names the ticket id and path or URL, the spec path, and the repo root, and says: "Call the Skill tool with `supermatt:implement` for this ticket and follow it through `supermatt:review` until the ticket is recorded done. You are a subagent: run both review axes yourself, one after the other, instead of spawning reviewers. Report the commits you made, the review findings you fixed and any you left." Check the result yourself (`SM status`, `git log`) before the next ticket; the agent's report is not evidence.

@@ -227,9 +227,10 @@ Once a set of changes passes, the check does not rerun the tests until the code 
 | `pipeline.interview` | `full` | `full` waits for your answers during grilling. `auto` answers each question with the recommended answer and lists these as assumptions in the spec. |
 | `pipeline.pause_at` | `implement,finish` | The stages `run` pauses *before*, waiting for your go-ahead: any of `grill`, `spec`, `tickets`, `implement`, `verify`, `finish`. `none` never pauses. |
 | `pipeline.branch` | `true` | Create a branch named after the feature before implementing |
+| `pipeline.branch_prefix` | empty | Prefix for that branch's name, for example `claude/` when your repo names branches that way |
 | `pipeline.worktree` | `false` | Implement in an isolated worktree instead, through `/supermatt:worktree` |
 | `pipeline.ticket_agents` | `false` | Build each ticket in a fresh subagent. The pipeline then checks `supermatt status` and `git log` itself before the next ticket, because a subagent's report is not evidence. That subagent runs both reviews itself, one after the other. |
-| `pipeline.finish` | `ask` | `ask` shows a menu. `merge`, `pr` or `keep` always does that one. |
+| `pipeline.finish` | `ask` | `ask` shows a menu. `merge`, `push` (merge, test, then push the base branch), `pr` or `keep` always does that one. |
 
 The equivalent commands:
 

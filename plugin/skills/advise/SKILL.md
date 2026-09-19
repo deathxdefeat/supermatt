@@ -22,7 +22,15 @@ Ground the advice in the repo, not in the description alone:
 - `git status`, `git log --oneline -15`: what changed recently, and how much churn is there on the same area?
 - The tracker (`docs/agents/issue-tracker.md` says where): open specs and tickets, and their states.
 - `CONTEXT.md` and `docs/adr/`: does the design the user describes exist on paper?
-- The tests: is there a test command, and does any test cover the outcome the user cares about? Run the suite once if it is cheap; a green suite beside a broken product is itself the key finding.
+- **The tests, as a guardrail.** Is there a test command (`SM status`, or what setup would pick)? For it to back the plan, check four things:
+  - **Coverage.** Does it run the kind of test the plan's outcomes need? Browser-level outcomes need the browser tests in the command, not just unit tests or lint.
+  - **Freshness.** Does it test the current source? An end-to-end suite that serves a production build (`next start`, `vite preview`) needs the build step in the command.
+  - **Stability.** Run the relevant tests more than once if that's affordable, and read any recent failure records (`test-results/.last-run.json`, CI runs). A test that sometimes fails will randomly block commits under `tests_before_commit`.
+  - **Speed.** A slow command means `green_before_stop` should be off, because it runs at the end of every turn that changed code, even at `warn`.
+
+  A green suite beside a broken product is itself the key finding.
+- **The toolchain.** Compare the versions the repo pins (`.nvmrc`, `.node-version`, `.tool-versions`, `engines`, `packageManager`, `rust-toolchain`, `.python-version`) with what is installed. A mismatch is a blocker for every later step. Find out how this machine manages versions (nvm, fnm, volta, mise, asdf, corepack, or a manual install) and give a switch command that will actually work here, including installing the pinned version if it's missing.
+- **The user's standing rules.** Read the repo's `AGENTS.md`/`CLAUDE.md` and any global instructions you were given, for rules that conflict with supermatt's defaults. For example: pushing straight to the main branch means `pipeline.branch false`; "no mandatory review" affects the preset; a release step such as a promote command belongs in the finish stage. The same files often say how releases work, and what counts as done.
 
 Facts are your job. Ask the user only about what the repo cannot tell you.
 
@@ -50,14 +58,54 @@ Name which of these it is (more than one can apply) and the evidence for it:
 
 ## 4. Lay out the plan
 
-Answer in this shape, briefly:
+### How supermatt behaves (plan within these facts)
+
+- **Pauses.** `pause_at` pauses once, *before* a listed stage. There is no pause between tickets inside `implement`. A stage that `run --from` starts at never pauses. To release or review in batches, plan one feature (one `run`) per batch. Choose the entry by what the user wants to look at:
+
+  | To look at this | before this starts | set `pause_at` to include |
+  |---|---|---|
+  | the spec | tickets are written | `tickets` |
+  | the spec and the tickets | any code is written | `implement` |
+  | the verify evidence | anything is merged or pushed | `finish` |
+
+  `pause_at tickets` stops *before* the tickets exist, so it cannot show you the ticket split.
+- **Entry points.** Use `--from spec` when the plan exists only in the conversation or in a pasted document. Use `--from tickets` only when a spec file or issue already exists, and `--from implement` only when the tickets exist. When the plan lives only in the conversation, the `run --from spec` step must happen in this same session, before any `/clear`.
+- **Finish modes.** `pipeline.finish` is one of `ask`, `merge`, `push` (merge, test, then push the base branch; use it for teams that push straight to main), `pr` or `keep`. A repo's separate release step (such as a promote command) runs only on the user's go, after `finish`.
+- **Tickets waiting on the user.** Tickets that need a decision from the user are labelled `needs-info`, and the pipeline skips them until the user answers.
+- **The user can't type `SM`.** Express option changes as answers to `/supermatt:setup` or as requests to `/supermatt:status`, never as `SM config` commands for the user.
+- **Branch names.** `pipeline.branch` creates `<branch_prefix><slug>`. Set `pipeline.branch_prefix` (for example `claude/`) when the repo's rules name branches a certain way.
+- **Open questions.** When the plan still has questions only the user can answer, say whether each one blocks the whole spec (the user must answer before the run) or only some tickets (the spec records it as an open decision, and those tickets become `needs-info`).
+- **Timeouts.** `test_timeout` defaults to 300 s (the maximum is 570). A test command slower than that fails every commit under `tests_before_commit`.
+
+### Answer in this shape, briefly
 
 1. **What this is**: one or two sentences naming the situation and the evidence, including anything the fact check turned up that the user didn't mention.
-2. **The plan**: numbered steps. Each gives the exact command (with flags), why it comes at this point, and what finished looks like for that step. Put setup and option changes where they belong (for example `/supermatt:setup` with the `standard` preset, `SM config pipeline.pause_at spec,tickets,implement,verify,finish`, or `--guided` / `--auto` on `run`). Recommend `strict` only when the user wants every code edit, including debugging and prototypes, gated behind a ticket.
-3. **What to watch for**: the one or two ways this plan most likely goes wrong, and how the user will notice.
-4. **Start here**: the single first command to type.
+2. **Settings**: one compact block with every supermatt setting the plan relies on, each with a short reason:
+   - the preset, plus each rule you change from it
+   - `test_command`, and `test_timeout` if the default of 300 s is too short
+   - `pause_at`
+   - `branch` or `worktree`
+   - `finish`
+   - `ticket_agents`
 
-Recommend one plan, not a menu. Mention an alternative only when the choice genuinely turns on something only the user knows, and say what it turns on. Be honest about limits: a step that depends on the user looking at the real product, a skill that has never been run in this repo, or duplicate skills installed alongside supermatt.
+   Where a standing rule conflicts (for example, the repo's `CLAUDE.md` says to use a topic branch but the user's global rule says push to main), say so here and let the user decide.
+3. **The plan**: numbered steps. Each gives the exact command (with flags), why it comes at this point, and what finished looks like. Blockers come first: switch to the pinned toolchain before setup, and make the test command pass in the checkout where it will run. Never downgrade a version mismatch to "a risk" because it happened to work before.
+4. **What to watch for**: the one or two ways this plan most likely goes wrong, and how the user will notice.
+5. **Start here**: the single first command to type. It must be the plan's step 1.
+
+### Check the plan before you hand it over
+
+Go through the plan once more and fix it (don't just mention the problem) wherever one of these fails:
+
+- **Every finding is handled.** Each problem from the fact check is a step or a named risk with its mitigation, and each blocker comes before the step it would break.
+- **The settings match the steps.** Every stop or `/clear` in the plan lines up with a `pause_at` entry, and no setting relies on a pause that doesn't exist. A worktree plan commits the config first. `finish` matches how the user integrates. Keep `finish` in `pause_at` whenever integrating triggers a production build or release.
+- **The test command proves the outcomes.** Every outcome the plan promises is checked by a named command, either in `test_command` or at the verify stage, and `test_command` fits within `test_timeout`.
+- **The guardrails fit the suite.** A slow suite gets `green_before_stop` off. A flaky test in the command gets fixed first, or is named as a risk to the commit rule.
+- **Settings are firm.** Give values, not "it depends". When one turns on a measurement you couldn't take, make taking it a plan step and state the rule to apply to the result.
+- **The pipeline verifies, not the user.** Anything a command can check runs in the test command or the verify stage. Only perceptual review (looking at the real product) is left to the user.
+- **Every setting is valid.** Each value you name exists (check the lists above). A plan that needs a behaviour supermatt doesn't have says so plainly instead of inventing an option.
+
+Recommend one plan, not a menu. Mention an alternative only when the choice genuinely turns on something only the user knows, and say what it turns on. Recommend `strict` only when the user wants every code edit, including debugging and prototypes, gated behind a ticket. Be honest about limits: a step that depends on the user looking at the real product, a skill that has never been run in this repo, or duplicate skills installed alongside supermatt.
 
 ## 5. Stop
 
