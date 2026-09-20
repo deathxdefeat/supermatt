@@ -4,7 +4,10 @@
   "meta": {
     "title": "Config trust",
     "locale": "en",
-    "quality_profile": "showcase"
+    "quality_profile": "showcase",
+    "legend": {
+      "mode": "hidden"
+    }
   },
   "lanes": [
     {

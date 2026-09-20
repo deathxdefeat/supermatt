@@ -2,6 +2,7 @@
   "schema_version": 2,
   "diagram_type": "workflow",
   "meta": {
+    "legend": { "mode": "hidden" },
     "title": "The end-of-turn check",
     "locale": "en",
     "quality_profile": "showcase"

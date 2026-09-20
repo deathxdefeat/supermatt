@@ -4,7 +4,10 @@ The command-line reference. For the options it sets, see [Configuration](configu
 
 The skills and hooks work through `plugin/bin/supermatt`, a single standard-library Python script that reads your options, records progress and runs your tests.
 
-![How the pieces fit: skills and hooks call the supermatt command, which reads the config, writes the state file and runs your test command](images/command.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/command-dark.png">
+  <img alt="How the pieces fit: skills and hooks call the supermatt command, which reads the config, writes the state file and runs your test command" src="images/command.png">
+</picture>
 
 When the plugin is enabled, it is on the `PATH` of Claude's Bash tool, so Claude can run any of these commands when you ask. It is not on your own terminal's `PATH`. To run it there, call `python3 <plugin dir>/bin/supermatt <command>` from inside a repo, where `<plugin dir>` is `~/.claude/plugins/cache/supermatt/supermatt/<version>` for a marketplace install, or `<clone>/plugin` for a local clone or link. If unsure, ask Claude to run `command -v supermatt` for the full path. It acts on the git repo that contains the current directory.
 

@@ -22,7 +22,10 @@ I built it because I needed it: brain injuries from military service left me wit
   <b><a href="#docs-and-contributing">Docs</a></b>
 </p>
 
-![The supermatt pipeline: grill, spec and tickets, a pause, then test, commit and review for each ticket, verify, a second pause, and finish](docs/images/pipeline.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/pipeline-dark.png">
+  <img alt="The supermatt pipeline: grill, spec and tickets, a pause, then test, commit and review for each ticket, verify, a second pause, and finish" src="docs/images/pipeline.png">
+</picture>
 
 *The pipeline `/supermatt:run` drives. The red boxes marked Pause are the two default pauses, where Claude summarises the last stage and waits for your go-ahead. Both pauses are [options](docs/configuration.md#pipeline-and-other-options).*
 
@@ -252,7 +255,10 @@ Each repo keeps its options in `.supermatt/config.json`, which you commit so the
 
 The config names a command that the hooks run on their own, so supermatt acts on a repo's config only after this machine has approved it. Without that check, cloning a repo could make Claude Code run any command the repo's author chose, the next time Claude commits or ends a turn.
 
-![Config trust: configs written by supermatt init are trusted, configs arriving by clone or pull stay off until you run supermatt trust](docs/images/trust.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/trust-dark.png">
+  <img alt="Config trust: configs written by supermatt init are trusted, configs arriving by clone or pull stay off until you run supermatt trust" src="docs/images/trust.png">
+</picture>
 
 Trust is exact: it pins a hash of the config, so any change made outside `supermatt config` has to be approved again. It covers the `test_command` text, not the code that command runs, so review an untrusted branch before working on it with the guardrails on. The guardrails are not a sandbox.
 

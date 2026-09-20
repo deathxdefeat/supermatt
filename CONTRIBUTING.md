@@ -36,4 +36,4 @@ The tests drive `plugin/bin/supermatt` the way the hooks call it, in temporary g
 
 ## Diagrams
 
-The diagram sources are the JSON specs in `docs/diagrams/`. The images in `docs/images/` are light-theme captures of them.
+The diagram sources are the JSON specs in `docs/diagrams/`. Each has two captures in `docs/images/`: `<name>.png` (light) and `<name>-dark.png`, which the docs pair in a `<picture>` element so GitHub shows the one matching the reader's theme. To change a diagram, edit its spec, render it with Archify's `render <type> <name>.json <name>.html --quality showcase` command (the HTML is gitignored), open the HTML with `?theme=light` and `?theme=dark`, and capture the diagram at 2x, cropped to its content.

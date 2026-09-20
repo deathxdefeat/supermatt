@@ -4,7 +4,20 @@
   "meta": {
     "title": "The supermatt pipeline",
     "locale": "en",
-    "quality_profile": "showcase"
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Stage"
+        },
+        "security": {
+          "label": "Pause (you decide)"
+        },
+        "external": {
+          "label": "You"
+        }
+      }
+    }
   },
   "lanes": [
     {

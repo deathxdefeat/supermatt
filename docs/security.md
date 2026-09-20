@@ -4,7 +4,10 @@ What supermatt runs on your machine, when, and what it cannot protect you from. 
 
 The config names a command that the hooks run on their own, so supermatt acts on a repo's config only after this machine has approved it. Without that check, cloning a repo could make Claude Code run any command the repo's author chose, the next time Claude commits or ends a turn.
 
-![Config trust: configs written by supermatt init are trusted, configs arriving by clone or pull stay off until you run supermatt trust](images/trust.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/trust-dark.png">
+  <img alt="Config trust: configs written by supermatt init are trusted, configs arriving by clone or pull stay off until you run supermatt trust" src="images/trust.png">
+</picture>
 
 *Trust records the repo's path and a SHA-256 hash of the config's exact contents, so any change made outside `supermatt config` has to be approved again.*
 

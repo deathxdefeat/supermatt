@@ -47,8 +47,8 @@ for why.
   `claude plugin marketplace add`.
 - `docs/configuration.md`, `docs/security.md`, `docs/cli.md`, `CONTRIBUTING.md`: the
   reference docs the README links to; keep the README to the overview.
-- `docs/diagrams/*.json`: the README diagram sources; `docs/images/*.png` are
-  their light-theme captures.
+- `docs/diagrams/*.json`: the README diagram sources; `docs/images/<name>.png` and
+  `<name>-dark.png` are their light and dark captures, paired in `<picture>` elements.
 
 ## Commands
 
