@@ -21,10 +21,7 @@ I built supermatt because I needed it: several traumatic brain injuries from act
   <b><a href="#docs">Docs</a></b>
 </p>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/pipeline-dark.png">
-  <img alt="The supermatt pipeline: grill, spec and tickets, a pause, then test, commit and review for each ticket, verify, a second pause, and finish" src="docs/images/pipeline.png">
-</picture>
+![The supermatt pipeline: grill, spec and tickets, a pause, then test, commit and review for each ticket, verify, a second pause, and finish](docs/images/pipeline.svg)
 
 *The pipeline `/supermatt:run` drives. At each red Pause box, Claude summarises the last stage and waits for your go-ahead.*
 
@@ -130,7 +127,11 @@ It reads the repo (pipeline status, commits, specs, tickets, tests) without chan
 
 ## Skills
 
-All 21 are invoked as `/supermatt:<name>`. Claude starts most of them by itself when your request fits; the four marked * only run when you type them. [Full descriptions](docs/skills.md).
+All 21 are invoked as `/supermatt:<name>`. Seven are the pipeline's stages; the other fourteen stand on their own, and you can call any of them at any time without the pipeline. Claude starts most skills by itself when your request fits; the four marked * only run when you type them. [Full descriptions](docs/skills.md).
+
+![The 21 supermatt skills in four groups: start here (run, advise, setup, status), the seven pipeline stages in order, seven on-demand skills Claude starts itself, and three on-demand skills only you can start](docs/images/skills.svg)
+
+**Start here**
 
 | Skill | What it does |
 |---|---|
@@ -138,6 +139,11 @@ All 21 are invoked as `/supermatt:<name>`. Claude starts most of them by itself 
 | `/supermatt:advise` | Tells you which skills to run, in what order, and why |
 | `/supermatt:setup` | Sets a repo up, once |
 | `/supermatt:status` | Shows progress and options; changes options when you ask |
+
+**Pipeline stages** (`run` calls these in order; each also works alone)
+
+| Skill | What it does |
+|---|---|
 | `/supermatt:grill` | Questions you until the design is clear |
 | `/supermatt:spec` | Turns the conversation into a spec |
 | `/supermatt:tickets` | Splits a spec into end-to-end tickets |
@@ -145,17 +151,21 @@ All 21 are invoked as `/supermatt:<name>`. Claude starts most of them by itself 
 | `/supermatt:review` | Reviews against your standards and the spec |
 | `/supermatt:verify` | Requires fresh evidence before anything is called done |
 | `/supermatt:finish` | Tests, then merges, opens a pull request or keeps the branch |
+
+**On demand** (no pipeline needed)
+
+| Skill | What it does |
+|---|---|
 | `/supermatt:debug` | Reproduces a hard bug, then fixes it with a regression test |
 | `/supermatt:merge` | Resolves a stopped merge, rebase or cherry-pick |
-| `/supermatt:triage` * | Sorts incoming issues into briefs an agent can work from |
 | `/supermatt:prototype` | Throwaway code to settle one design question |
 | `/supermatt:research` | Sends an agent to primary sources; saves a cited file |
 | `/supermatt:architecture` | Finds modules that should do more behind a smaller interface |
-| `/supermatt:wayfinder` * | Breaks a large, unclear effort into decisions, one at a time |
 | `/supermatt:drift` | Checks work against what you actually approved |
 | `/supermatt:worktree` | Sets up an isolated workspace |
+| `/supermatt:triage` * | Sorts incoming issues into briefs an agent can work from |
+| `/supermatt:wayfinder` * | Breaks a large, unclear effort into decisions, one at a time |
 | `/supermatt:handoff` * | Writes a handoff so a fresh session can continue |
-
 <p align="right"><a href="#supermatt">↑ top</a></p>
 
 ## Guardrails
@@ -178,10 +188,7 @@ Four rules, enforced by Claude Code hooks, each set to `off`, `warn` or `block`.
 
 A repo's config names a test command that the hooks run on their own, so supermatt acts on a config only after you approve it on your machine. Approval pins the exact contents: a pull, a teammate's edit or a hand edit must be approved again, and until then each session tells you supermatt is off.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/trust-dark.png">
-  <img alt="Config trust: configs written by supermatt init are trusted, configs arriving by clone or pull stay off until you run supermatt trust" src="docs/images/trust.png">
-</picture>
+![Config trust: configs written by supermatt init are trusted, configs arriving by clone or pull stay off until you run supermatt trust](docs/images/trust.svg)
 
 Trust covers the command, not the code it runs, so review an outside branch before working on it with the guardrails on. The guardrails are not a sandbox. [Security](docs/security.md) lists exactly what each hook runs and where the limits are; to report a vulnerability, see [SECURITY.md](SECURITY.md).
 

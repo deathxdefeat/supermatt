@@ -10,10 +10,7 @@ Each repo keeps its options in `.supermatt/config.json`, which you commit so the
 
 The guardrails work from each ticket's state, which the skills record as they go.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="images/ticket-states-dark.png">
-  <img alt="Ticket states: implementing, needs-review, done, and blocked while Claude waits on your answer" src="images/ticket-states.png">
-</picture>
+![Ticket states: implementing, needs-review, done, and blocked while Claude waits on your answer](images/ticket-states.svg)
 
 *The state supermatt records for each ticket. `blocked` means Claude is waiting on you; once you answer, the ticket returns to whichever state it came from.*
 
@@ -44,10 +41,7 @@ A ticket's id is its local file number (`01`) or its issue number on a hosted tr
 
 This is the check that stops Claude from ending a turn with work unfinished.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="images/end-of-turn-dark.png">
-  <img alt="The end-of-turn check: the questions supermatt asks before letting Claude end its turn" src="images/end-of-turn.png">
-</picture>
+![The end-of-turn check: the questions supermatt asks before letting Claude end its turn](images/end-of-turn.svg)
 
 *Shown with `review_after_ticket` and `green_before_stop` at `block`. At `warn`, the turn ends with a warning to you instead of being blocked. Not shown: when the tests fail on exactly the files that failed at the last end of turn, the turn ends with a warning instead of a second block.*
 

@@ -1,0 +1,407 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "The 21 supermatt skills",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "legend": {
+      "mode": "hidden"
+    }
+  },
+  "components": [
+    {
+      "id": "advise",
+      "type": "frontend",
+      "label": "advise",
+      "sublabel": "where do I start?",
+      "pos": [
+        192,
+        80
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "run",
+      "type": "frontend",
+      "label": "run",
+      "sublabel": "idea to merged code",
+      "pos": [
+        40,
+        80
+      ],
+      "size": [
+        124,
+        60
+      ],
+      "tag": "you type it"
+    },
+    {
+      "id": "setup",
+      "type": "frontend",
+      "label": "setup",
+      "sublabel": "once per repo",
+      "pos": [
+        344,
+        80
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "status",
+      "type": "frontend",
+      "label": "status",
+      "sublabel": "progress, options",
+      "pos": [
+        496,
+        80
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "grill",
+      "type": "backend",
+      "label": "grill",
+      "sublabel": "settle the design",
+      "pos": [
+        40,
+        250
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "spec",
+      "type": "backend",
+      "label": "spec",
+      "sublabel": "write it down",
+      "pos": [
+        192,
+        250
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "tickets",
+      "type": "backend",
+      "label": "tickets",
+      "sublabel": "slice the work",
+      "pos": [
+        344,
+        250
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "implement",
+      "type": "backend",
+      "label": "implement",
+      "sublabel": "test-first build",
+      "pos": [
+        496,
+        250
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "review",
+      "type": "backend",
+      "label": "review",
+      "sublabel": "standards + spec",
+      "pos": [
+        648,
+        250
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "verify",
+      "type": "backend",
+      "label": "verify",
+      "sublabel": "fresh evidence",
+      "pos": [
+        800,
+        250
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "finish",
+      "type": "backend",
+      "label": "finish",
+      "sublabel": "merge, PR or keep",
+      "pos": [
+        952,
+        250
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "debug",
+      "type": "database",
+      "label": "debug",
+      "sublabel": "reproduce, then fix",
+      "pos": [
+        40,
+        420
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "merge",
+      "type": "database",
+      "label": "merge",
+      "sublabel": "resolve conflicts",
+      "pos": [
+        192,
+        420
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "prototype",
+      "type": "database",
+      "label": "prototype",
+      "sublabel": "throwaway answer",
+      "pos": [
+        344,
+        420
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "research",
+      "type": "database",
+      "label": "research",
+      "sublabel": "cited sources",
+      "pos": [
+        496,
+        420
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "architecture",
+      "type": "database",
+      "label": "architecture",
+      "sublabel": "deepen modules",
+      "pos": [
+        648,
+        420
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "drift",
+      "type": "database",
+      "label": "drift",
+      "sublabel": "still approved?",
+      "pos": [
+        800,
+        420
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "worktree",
+      "type": "database",
+      "label": "worktree",
+      "sublabel": "isolated workspace",
+      "pos": [
+        952,
+        420
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "triage",
+      "type": "security",
+      "label": "triage",
+      "sublabel": "sort new issues",
+      "pos": [
+        40,
+        590
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "wayfinder",
+      "type": "security",
+      "label": "wayfinder",
+      "sublabel": "map big efforts",
+      "pos": [
+        192,
+        590
+      ],
+      "size": [
+        124,
+        60
+      ]
+    },
+    {
+      "id": "handoff",
+      "type": "security",
+      "label": "handoff",
+      "sublabel": "brief next session",
+      "pos": [
+        344,
+        590
+      ],
+      "size": [
+        124,
+        60
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Start here",
+      "wraps": [
+        "run",
+        "advise",
+        "setup",
+        "status"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "The pipeline: run calls these in order, and each also works alone",
+      "wraps": [
+        "grill",
+        "spec",
+        "tickets",
+        "implement",
+        "review",
+        "verify",
+        "finish"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "On demand: Claude starts these when your request fits",
+      "wraps": [
+        "debug",
+        "merge",
+        "prototype",
+        "research",
+        "architecture",
+        "drift",
+        "worktree"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "On demand: only when you type them",
+      "wraps": [
+        "triage",
+        "wayfinder",
+        "handoff"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "run-drives",
+      "from": "run",
+      "to": "grill",
+      "label": "drives, in order",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        102,
+        195
+      ]
+    },
+    {
+      "id": "grill-to-spec",
+      "from": "grill",
+      "to": "spec",
+      "variant": "emphasis"
+    },
+    {
+      "id": "spec-to-tickets",
+      "from": "spec",
+      "to": "tickets",
+      "variant": "emphasis"
+    },
+    {
+      "id": "tickets-to-implement",
+      "from": "tickets",
+      "to": "implement",
+      "variant": "emphasis"
+    },
+    {
+      "id": "implement-to-review",
+      "from": "implement",
+      "to": "review",
+      "variant": "emphasis"
+    },
+    {
+      "id": "review-to-verify",
+      "from": "review",
+      "to": "verify",
+      "variant": "emphasis"
+    },
+    {
+      "id": "verify-to-finish",
+      "from": "verify",
+      "to": "finish",
+      "variant": "emphasis"
+    }
+  ]
+}

@@ -40,7 +40,7 @@
     },
     {
       "id": "each_ticket",
-      "label": "implement: each ticket",
+      "label": "implement: repeat for every ticket",
       "lane": "build",
       "fromCol": 1,
       "toCol": 2,
@@ -109,6 +109,7 @@
       "col": 2,
       "type": "backend",
       "label": "Review and fix",
+      "sublabel": "then the next ticket",
       "width": 132
     },
     {
@@ -182,7 +183,7 @@
       "id": "gap-found",
       "from": "verify",
       "to": "code",
-      "label": "gap found, add a ticket",
+      "label": "gap found: new ticket, one round only",
       "variant": "dashed",
       "role": "return"
     },

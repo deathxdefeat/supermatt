@@ -49,8 +49,8 @@ for why.
   `docs/cli.md`, `docs/troubleshooting.md`, `CONTRIBUTING.md`: the reference docs the
   README links to. Keep the README a short overview (about 2,500 words); detail goes
   in these files.
-- `docs/diagrams/*.json`: the README diagram sources; `docs/images/<name>.png` and
-  `<name>-dark.png` are their light and dark captures, paired in `<picture>` elements.
+- `docs/diagrams/*.json`: the README diagram sources; `docs/images/<name>.svg` is the
+  dark-theme SVG export of each (see `CONTRIBUTING.md`).
 
 ## Commands
 

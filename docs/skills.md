@@ -36,6 +36,8 @@ Tell it to go and it starts step 1 itself. The exceptions are the four skills on
 
 ## All 21 skills
 
+![The 21 supermatt skills in four groups: start here, the seven pipeline stages in order, seven on-demand skills Claude starts itself, and three on-demand skills only you can start](images/skills.svg)
+
 All 21 skills are invoked as `/supermatt:<name>`. Where skills from the two source collections (Matt Pocock's and obra/superpowers) overlapped, they were merged into one, and the skills call each other by these names. Claude also starts a skill by itself when your request fits, except the four marked *(you type it)*.
 
 **Driving the workflow**

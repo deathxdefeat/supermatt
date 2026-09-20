@@ -2,10 +2,7 @@
 
 What `/supermatt:run` does, stage by stage, and what it leaves behind. For the overview, see the [README](../README.md).
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="images/pipeline-dark.png">
-  <img alt="The supermatt pipeline: grill, spec and tickets, a pause, then test, commit and review for each ticket, verify, a second pause, and finish" src="images/pipeline.png">
-</picture>
+![The supermatt pipeline: grill, spec and tickets, a pause, then test, commit and review for each ticket, verify, a second pause, and finish](images/pipeline.svg)
 
 ## Stages
 
