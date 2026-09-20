@@ -12,4 +12,4 @@ Include what an attacker controls (for example a cloned repo's `.supermatt/confi
 
 In scope: `plugin/bin/supermatt`, `plugin/hooks/hooks.json`, the config trust model, and skill instructions that could lead an agent to act unsafely.
 
-The trust model is described in the README under "Trust, safety and limits". By design, a trusted `test_command` runs your repo's own code. Running code from a branch you haven't reviewed is covered there, and is not treated as a vulnerability.
+The trust model is described in [docs/security.md](docs/security.md). By design, a trusted `test_command` runs your repo's own code. Running code from a branch you haven't reviewed is covered there, and is not treated as a vulnerability.
