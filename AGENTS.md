@@ -45,8 +45,10 @@ for why.
   running `supermatt hook <event>`.
 - `.claude-plugin/marketplace.json`: makes the repo installable with
   `claude plugin marketplace add`.
-- `docs/configuration.md`, `docs/security.md`, `docs/cli.md`, `CONTRIBUTING.md`: the
-  reference docs the README links to; keep the README to the overview.
+- `docs/pipeline.md`, `docs/skills.md`, `docs/configuration.md`, `docs/security.md`,
+  `docs/cli.md`, `docs/troubleshooting.md`, `CONTRIBUTING.md`: the reference docs the
+  README links to. Keep the README a short overview (about 2,500 words); detail goes
+  in these files.
 - `docs/diagrams/*.json`: the README diagram sources; `docs/images/<name>.png` and
   `<name>-dark.png` are their light and dark captures, paired in `<picture>` elements.
 

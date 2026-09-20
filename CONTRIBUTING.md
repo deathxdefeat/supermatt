@@ -31,7 +31,7 @@ The tests drive `plugin/bin/supermatt` the way the hooks call it, in temporary g
 | `plugin/bin/supermatt` | The command that holds options, pipeline state and the hook logic |
 | `plugin/hooks/hooks.json` | The PreToolUse, Stop and SessionStart hooks, all calling `supermatt hook` |
 | `tests/` | The unit tests |
-| `docs/configuration.md`, `docs/security.md`, `docs/cli.md` | The reference docs the README links to |
+| `docs/pipeline.md`, `docs/skills.md`, `docs/configuration.md`, `docs/security.md`, `docs/cli.md`, `docs/troubleshooting.md` | The reference docs the README links to |
 | `CONTEXT.md`, `docs/adr/` | Project terms and design decisions |
 
 ## Diagrams
