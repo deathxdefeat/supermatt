@@ -49,6 +49,7 @@ Name which of these it is (more than one can apply) and the evidence for it:
 | **A question needs something runnable** | a state model or UI that can't be settled on paper | `/supermatt:prototype` |
 | **Missing facts** | the answer is in docs, an API or old sessions | `/supermatt:research` |
 | **Incoming pile** | bug reports or requests you didn't write | `/supermatt:triage` |
+| **Scope in doubt** | work has grown past what was asked; an agent-written spec, plan or `--auto` run nobody has read against the user's words | `/supermatt:drift` |
 | **Mid-stream** | a feature in flight in `SM status` | `/supermatt:run` to resume |
 | **Already planned** | an audit, design doc, plan, spec or tickets exist from outside the pipeline | `/supermatt:run <feature> --from spec` (or `tickets` / `implement`), so the pipeline tracks it without grilling again |
 

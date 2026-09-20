@@ -30,6 +30,7 @@ Keep stages 1 to 3 in one context window. Each ticket can start fresh (`pipeline
 - **`/supermatt:architecture`**: module design vocabulary for a narrow question, or a full scan for deepening opportunities.
 - **`/supermatt:merge`**: resolve an in-progress merge or rebase by intent.
 - **`/supermatt:worktree`**: an isolated workspace for feature work.
+- **`/supermatt:drift`**: checks a spec, tickets, plan or work in progress against what the user actually approved, lists each departure as *against* or *beyond*, and waits for a ruling. Use it before an unattended run starts from something an agent wrote, and whenever scope is in doubt mid-run.
 - **`/supermatt:handoff`**: a portable handoff document for a new harness, directory or colleague.
 
 ## Setup and options

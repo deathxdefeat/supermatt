@@ -1,14 +1,34 @@
 # supermatt
 
-supermatt is a Claude Code plugin that takes each feature through one fixed, resumable process. Claude agrees the design with you, writes a spec, splits it into small tickets, builds each ticket test-first, has it reviewed and checks the result against the spec. Then it merges the work or opens a pull request.
-
-**Why it exists.** [Matt Pocock's engineering skills](https://github.com/mattpocock/skills) and [obra/superpowers](https://github.com/obra/superpowers) are good but separate. Nothing ties them into one flow, nothing remembers where a feature stands when a session ends, and nothing stops Claude calling work done while the tests fail or before it has been reviewed. supermatt adapts them into one set of skills, runs them as a pipeline that saves its place in your repo, and adds optional guardrails that check the work before Claude commits or hands control back to you.
-
-**The intended outcome.** You describe a feature, or a problem, and get working, tested, reviewed code through a process you can repeat. "Done" means your test command passes and every spec requirement has been checked, not that Claude says so.
+supermatt is a Claude Code plugin that keeps a feature moving from idea to merged code, and keeps you on track while it does. It takes the engineering skills from [Matt Pocock's skills](https://github.com/mattpocock/skills), adds a few from [obra/superpowers](https://github.com/obra/superpowers) and a few of its own, and runs them as one guided process. Claude knows which step comes next, starts it for you, and remembers where you stopped.
 
 ```text
 /supermatt:run add CSV export to the reports page
 ```
+
+## Why it exists
+
+I built supermatt because I needed it. I have several traumatic brain injuries from active-duty military service during the Global War on Terror, and adult ADHD as a direct result of them. My memory fails in odd ways and I distract myself easily. I start a feature, wander into something interesting, and forget to push the real work forward.
+
+I was using two excellent skill collections, and each solved half of my problem.
+
+- **Superpowers guides you.** Its skills start by themselves and lead you through a process from idea to finished work, so you always know what comes next. That guidance is what keeps me on track. But in my projects it spread its own files and conventions through the repo, and when I called one of Matt Pocock's skills partway through, the session, branch or worktree often ended up in a mess.
+- **Matt Pocock's skills are the ones I prefer to build with**, almost every time. But you start each one yourself and nothing connects them. I would forget to use the one I needed and regret it later. I didn't know what order they belonged in as a process. Once I had started, I couldn't tell when a step was finished or which skill came next.
+
+I wanted the guidance of Superpowers with the skills of Matt Pocock, and nothing offered that, so I fused them. For me the result works like the bumpers in a bowling lane. When something off-course catches my attention, I note it for later and keep going, because the process is still there pointing at the next step.
+
+You don't need a brain injury to get something from this. If you have lost an afternoon to a tangent, skipped a step you knew mattered, or come back to a project with no idea where you left off, you have the same problem in a milder form.
+
+## What it does
+
+- **It gives the skills an order.** `/supermatt:run` takes a feature through six stages: settle the design with you, write the spec, split it into small tickets, build each ticket test-first with a review, check the result against the spec, then merge or open a pull request. You never have to know which skill is next or when it is time to move on.
+- **It starts the right skill for you.** Most skills start by themselves when your request fits, so forgetting one stops being possible. Four that should only ever run on purpose (`run`, `triage`, `wayfinder` and `handoff`) stay yours to type.
+- **It remembers where you are.** Progress is recorded in your repo. After `/clear`, a context compaction or a week away, `/supermatt:run` picks the feature up at the stage where it stopped.
+- **It tells you where to start.** Describe your situation to `/supermatt:advise` in your own words. It reads the repo, then lays out which skills to run, in what order, and why.
+- **It is one skill set, not two fighting each other.** Of the 20 skills, most are Matt Pocock's, three from Superpowers fill the gaps (`verify`, `finish` and `worktree`), and `run`, `status` and `advise` are my own. Overlapping skills were merged and they all call each other by name, so using one in the middle of another no longer breaks the session.
+- **It stays light.** supermatt does nothing in a repo until you set that repo up, and [the files it adds](#what-supermatt-adds-to-your-repo) are few and listed. Its checks run as hooks, not as instructions Claude keeps re-reading and re-running: a passing test run adds nothing to the conversation, every rule can be set to `off`, `warn` or `block`, and the end-of-turn check gives up after three tries, so a session can't loop forever burning tokens.
+
+**The intended outcome.** You describe a feature, or a problem, and get working, tested, reviewed code through a process you can repeat without holding it in your head. "Done" means your test command passes and every spec requirement has been checked, not that Claude says so.
 
 | | Claude Code on its own | With supermatt |
 |---|---|---|
@@ -22,7 +42,7 @@ supermatt is a Claude Code plugin that takes each feature through one fixed, res
 
 The evidence is only as strong as your test command (see [Limits](#limits)). For a small fix you don't need the whole pipeline: call one skill such as `/supermatt:debug` or `/supermatt:implement`, or ask `/supermatt:advise` where to start.
 
-**Contents:** [How it works](#how-it-works) · [Install](#install) · [Quick start](#quick-start) · [The advisor](#not-sure-where-to-start-ask-the-advisor) · [Skills](#skills) · [Options and guardrails](#options-and-guardrails) · [Trust, safety and limits](#trust-safety-and-limits) · [Troubleshooting](#troubleshooting) · [The supermatt command](#the-supermatt-command) · [Develop](#develop) · [Credits and licence](#credits-and-licence)
+**Contents:** [Why it exists](#why-it-exists) · [What it does](#what-it-does) · [How it works](#how-it-works) · [Install](#install) · [Quick start](#quick-start) · [The advisor](#not-sure-where-to-start-ask-the-advisor) · [Skills](#skills) · [Options and guardrails](#options-and-guardrails) · [Trust, safety and limits](#trust-safety-and-limits) · [Troubleshooting](#troubleshooting) · [The supermatt command](#the-supermatt-command) · [Develop](#develop) · [Credits and licence](#credits-and-licence)
 
 ## How it works
 
@@ -128,13 +148,14 @@ Tell it to go and it starts step 1 itself. The exceptions are the four skills on
 | A question only running code can settle | `/supermatt:prototype` |
 | Facts you need from docs or APIs | `/supermatt:research` |
 | A pile of incoming issues | `/supermatt:triage` |
+| Work that may have grown past what you approved | `/supermatt:drift` |
 | A feature already in flight | `/supermatt:run` to resume |
 
 If the "keeps being called done" row applies together with another one, the advisor deals with it first. It means nothing checks the outcome you actually care about, so every step can pass its own checks and still ship something broken. The plan starts by writing that outcome as one end-to-end acceptance test (a real input and the exact expected output) and adding it to your test command. Under the `standard` preset, Claude then can't commit while that test fails.
 
 ## Skills
 
-All 20 skills are invoked as `/supermatt:<name>`. Where skills from the two source collections (Matt Pocock's and obra/superpowers) overlapped, they were merged into one, and the skills call each other by these names. Claude also starts a skill by itself when your request fits, except the four marked *(you type it)*.
+All 21 skills are invoked as `/supermatt:<name>`. Where skills from the two source collections (Matt Pocock's and obra/superpowers) overlapped, they were merged into one, and the skills call each other by these names. Claude also starts a skill by itself when your request fits, except the four marked *(you type it)*.
 
 **Driving the workflow**
 
@@ -168,6 +189,7 @@ All 20 skills are invoked as `/supermatt:<name>`. Where skills from the two sour
 | `/supermatt:research` | Sends a background agent to primary sources and saves a cited Markdown file |
 | `/supermatt:architecture` | Helps design modules, and finds places where a module should do more behind a smaller interface |
 | `/supermatt:wayfinder` *(you type it)* | Breaks a large, unclear effort into decision tickets and resolves them one at a time |
+| `/supermatt:drift` | Checks a spec, tickets, plan or work in progress against what you actually approved, lists each departure as *against* or *beyond* what you approved, and changes nothing until you rule |
 | `/supermatt:worktree` | Sets up an isolated workspace, such as a separate git worktree, for feature work |
 | `/supermatt:handoff` *(you type it)* | Writes a handoff document so a fresh session can pick up the work |
 
@@ -342,7 +364,7 @@ The tests drive `plugin/bin/supermatt` the way the hooks call it, in temporary g
 |---|---|
 | `plugin/.claude-plugin/plugin.json` | The plugin manifest |
 | `.claude-plugin/marketplace.json` | The marketplace entry that makes `supermatt@supermatt` installable |
-| `plugin/skills/<name>/` | The 20 skills. `run` and `status` are original; the rest are adapted from the source skills. |
+| `plugin/skills/<name>/` | The 21 skills. `run`, `status` and `drift` are original; the rest are adapted from the source skills. |
 | `plugin/bin/supermatt` | The command that holds options, pipeline state and the hook logic |
 | `plugin/hooks/hooks.json` | The PreToolUse, Stop and SessionStart hooks, all calling `supermatt hook` |
 | `tests/` | The unit tests |
@@ -354,4 +376,4 @@ The diagram sources are the JSON specs in `docs/diagrams/`. The images in `docs/
 
 ## Credits and licence
 
-MIT; see `LICENSE`. Most skills are adapted from Matt Pocock's [skills](https://github.com/mattpocock/skills) and Jesse Vincent's [superpowers](https://github.com/obra/superpowers), both MIT. `run`, `status`, the `advise` process, `bin/supermatt` and the hooks are original to supermatt. `plugin/NOTICE.md` has their licences and the commits the skills were imported from. supermatt is an independent project, not affiliated with or endorsed by Matt Pocock or Jesse Vincent. The adapted skills don't follow the source repositories automatically: pulling in their changes is a manual merge.
+MIT; see `LICENSE`. Most skills are adapted from Matt Pocock's [skills](https://github.com/mattpocock/skills) and Jesse Vincent's [superpowers](https://github.com/obra/superpowers), both MIT. `run`, `status`, `drift`, the `advise` process, `bin/supermatt` and the hooks are original to supermatt. `plugin/NOTICE.md` has their licences and the commits the skills were imported from. supermatt is an independent project, not affiliated with or endorsed by Matt Pocock or Jesse Vincent. The adapted skills don't follow the source repositories automatically: pulling in their changes is a manual merge.

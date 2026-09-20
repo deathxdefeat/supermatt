@@ -56,6 +56,10 @@ _Avoid_: allowed, approved repo
 A named setting for all four enforcement rules at once: strict, standard, light or off.
 _Avoid_: profile, mode
 
+**Drift**:
+Change the user did not authorize, either against what they approved or beyond it. `/supermatt:drift` lists it and the user rules on it.
+_Avoid_: scope creep, deviation
+
 **Pipeline state**:
 The local, gitignored `.supermatt/state.json`: the active feature, its stage, ticket states and the last green test fingerprint.
 _Avoid_: progress file, session

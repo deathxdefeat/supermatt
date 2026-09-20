@@ -68,6 +68,8 @@ Keep the grill, spec and tickets stages in one unbroken context: the spec and ti
 
 **Asking the user mid-ticket.** Before any question that ends your turn while a ticket is open, record `SM ticket <id> blocked`, so the stop checks let the turn end. When the answer arrives, set the ticket back to `implementing` or `needs-review` and carry on.
 
+**Staying in scope.** When you cannot trace what you are about to build, or have built, to the ticket, the spec or the user's own words, call the Skill tool with "supermatt:drift" before doing anything else. It freezes the work and puts the departures to the user; do not settle them yourself.
+
 The enforcement hooks back this loop up when they are on: commits run the tests, code edits need a ticket in progress, and the next ticket waits for the last one's review. If a hook blocks you, fix the cause it names. Never change an enforcement option to get past a block; only the user decides that.
 
 ## 5. verify

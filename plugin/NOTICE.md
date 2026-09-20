@@ -9,7 +9,7 @@ Most supermatt skills are adapted from two MIT-licensed skill collections. Files
 
 The mattpocock/skills import was taken from a local branch on top of upstream `74ca5fe` that had five small edits: chain skills allowed to be model-invoked; implement commits before review and invokes tdd and code-review through the Skill tool; review sub-agents told not to spawn more sub-agents; tdd's trigger description narrowed; and the handoff skill renamed. supermatt's own adaptations go further than these.
 
-`run`, `status`, the `advise` process, `bin/supermatt` and `hooks/` are original to supermatt.
+`run`, `status`, `drift`, the `advise` process, `bin/supermatt` and `hooks/` are original to supermatt.
 
 ## mattpocock/skills
 
