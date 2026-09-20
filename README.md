@@ -26,7 +26,7 @@ You don't need a brain injury to get something from this. If you have lost an af
 - **It remembers where you are.** Progress is recorded in your repo. After `/clear`, a context compaction or a week away, `/supermatt:run` picks the feature up at the stage where it stopped.
 - **It tells you where to start.** Describe your situation to `/supermatt:advise` in your own words. It reads the repo, then lays out which skills to run, in what order, and why.
 - **It is one skill set, not two fighting each other.** Of the 21 skills, most are Matt Pocock's, three from Superpowers fill the gaps (`verify`, `finish` and `worktree`), and `run`, `status`, `advise` and `drift` are my own, built for the gaps neither collection covered. Overlapping skills were merged and they all call each other by name, so using one in the middle of another no longer breaks the session.
-- **It stays light.** supermatt does nothing in a repo until you set that repo up, and [the files it adds](#what-supermatt-adds-to-your-repo) are few and listed. Its checks run as hooks, not as instructions Claude keeps re-reading and re-running: a passing test run adds nothing to the conversation, every rule can be set to `off`, `warn` or `block`, and the end-of-turn check gives up after three tries, so a session can't loop forever burning tokens.
+- **It stays light.** supermatt does nothing in a repo until you set that repo up, and [the files it adds](#what-supermatt-adds-to-your-repo) are few and listed. Its checks run as hooks, not as instructions Claude keeps re-reading and re-running: a passing test run adds nothing to the conversation, files that already passed are not tested again, every rule can be set to `off`, `warn` or `block`, and the end-of-turn check gives up after three tries, so a session can't loop forever burning tokens.
 
 **The intended outcome.** You describe a feature, or a problem, and get working, tested, reviewed code through a process you can repeat without holding it in your head. "Done" means your test command passes and every spec requirement has been checked, not that Claude says so.
 
@@ -58,7 +58,7 @@ The evidence is only as strong as your test command (see [Limits](#limits)). For
 | **spec** | The conversation becomes a written spec in your issue tracker. It names the seams under test (the public interfaces the tests will drive, never internals) and any decisions that were assumed rather than asked. |
 | **tickets** | The spec is split into tracer-bullet tickets: thin slices that each work end to end through every layer, so each one can be checked on its own. Each ticket lists the tickets that must finish before it. |
 | **implement** | One ticket at a time, Claude writes a failing test, writes just enough code to pass it, repeats until the ticket is covered, and commits. It then reviews the change twice, once per axis. One pass checks your coding standards (files such as `CONTRIBUTING.md` or `CODING_STANDARDS.md`, plus a built-in list of common code smells that applies even if you have none), the other checks the ticket's requirements. Claude then fixes what they find. With `pipeline.review_agents` on, the two passes run as parallel sub-agents, each with a fresh context. |
-| **verify** | Every requirement in the spec is checked against fresh evidence: a command run now, its output read. Each gap becomes a new ticket and goes back through implement, once: gaps left after that round come to you. |
+| **verify** | Every requirement in the spec is checked against current evidence: a command run on the files as they stand, its output read. Each gap becomes a new ticket and goes back through implement, once: gaps left after that round come to you. |
 | **finish** | The full test suite runs (unless these exact files already passed it), then the work is merged into the branch it started from, opened as a pull request, or kept on its branch. |
 
 The reviewers are still Claude, so treat the review as a second reading, not an independent audit. The hard evidence is your test command passing and the requirement-by-requirement check against the spec, which you see at the second pause.
@@ -175,7 +175,7 @@ All 21 skills are invoked as `/supermatt:<name>`. Where skills from the two sour
 | `/supermatt:tickets` | Splits a spec into tracer-bullet tickets, each listing what blocks it |
 | `/supermatt:implement` | Builds a ticket, a spec or a described behaviour test-first, commits it, and hands it to review |
 | `/supermatt:review` | Reviews against your coding standards and against the spec, in parallel, then fixes the findings and closes the ticket |
-| `/supermatt:verify` | Requires fresh evidence before anything is called done |
+| `/supermatt:verify` | Requires evidence from the current files before anything is called done |
 | `/supermatt:finish` | Runs the full test suite, then merges, opens a pull request, or keeps the branch |
 
 **On demand**
@@ -236,7 +236,7 @@ This is the check that stops Claude from ending a turn with work unfinished.
 
 ![The end-of-turn check: the questions supermatt asks before letting Claude end its turn](docs/images/end-of-turn.png)
 
-*Shown with `review_after_ticket` and `green_before_stop` at `block`. At `warn`, the turn ends with a warning to you instead of being blocked.*
+*Shown with `review_after_ticket` and `green_before_stop` at `block`. At `warn`, the turn ends with a warning to you instead of being blocked. Not shown: when the tests fail on exactly the files that failed at the last end of turn, the turn ends with a warning instead of a second block.*
 
 Once a set of files passes, nothing reruns the tests until the code changes again: not this check, not the commit rule, not `verify` or `finish`. The pipeline runs the suite through `supermatt test`, which shares that memory; `supermatt test --force` reruns regardless. If the same unchanged files fail twice in a row, the second end of turn warns you instead of blocking again.
 
@@ -286,7 +286,7 @@ The config names a command that the hooks run on their own, so supermatt acts on
 |---|---|---|---|
 | PreToolUse | Bash tool calls | Your `test_command`, only when the command contains `git commit` and these files have not already passed it. Every other Bash call returns before touching git or the disk. | 600 s |
 | PreToolUse | Edit, Write, MultiEdit, NotebookEdit | Only `git` lookups and a read of the config and pipeline state | 10 s |
-| Stop | Every end of turn | `git status`, and your `test_command` when uncommitted code changed since the last passing test run | 600 s |
+| Stop | Every end of turn | `git status`, and your `test_command` when uncommitted code changed since the last passing test run. Files that failed last time and have not changed since are not run again. | 600 s |
 | SessionStart | Session start, resume, `/clear` and compaction | Only `git` lookups; tells Claude which feature is in flight, or tells you why supermatt is off | 10 s |
 
 Apart from your `test_command`, which runs through the shell in the repo root and is stopped after `test_timeout` seconds, the hooks run only read-only `git` commands, and the only file they write is `.supermatt/state.json`.
@@ -296,7 +296,8 @@ Apart from your `test_command`, which runs through the shell in the repo root an
 - **Guardrails, not a sandbox.** `ticket_before_code` watches Claude's file-editing tools, not every shell command that could write a file.
 - **Commits are recognised by pattern.** `tests_before_commit` looks for `git commit` in a Bash command, including forms like `git -C path commit`. A commit made through a git alias or a script is not seen, and commits you make in your own terminal are never touched.
 - **Tests run on the working tree**, not only the staged changes.
-- **The end-of-turn check gives up.** After three blocks in a row it lets the turn end with a warning, so a session cannot get stuck. A stubborn failure gets through with that warning.
+- **The end-of-turn check gives up.** After three blocks in a row it lets the turn end with a warning, and it never blocks twice on the same unchanged files, so a session cannot get stuck. A stubborn failure gets through with that warning.
+- **A remembered pass is about files, not the world.** supermatt skips the suite when the same non-exempt files already passed. It cannot see a database, a service or an environment variable changing underneath them. `supermatt test --force` reruns the suite when you suspect that, or a flaky test.
 - **The rules are only as good as the test command.** A suite that doesn't cover the outcome you care about stays green while the product is broken. That is why `/supermatt:advise` starts such cases with an acceptance test.
 - **Relaxing a rule is policy, not a lock.** The skills tell Claude never to change an option to get past a block. Claude could still run `supermatt config` itself; because the config is committed, such a change shows up in `git status`.
 - **The hooks never break a session.** Bad hook input, a broken config or a bug inside supermatt never fail a tool call: a bug is reported as a message, a broken or untrusted config is reported when a session starts, and otherwise the hook quietly does nothing.
@@ -311,6 +312,8 @@ Apart from your `test_command`, which runs through the shell in the repo root an
 | "no ticket is in progress" | `ticket_before_code` caught an edit made outside a ticket. Start the work through `/supermatt:run` or `/supermatt:implement`, or add the path to `exempt` if it isn't code. |
 | A commit or the end of a turn is blocked | The message says what failed and, for test failures, shows the last 30 lines of output. Fix the cause, or change the rule with `/supermatt:status`. |
 | "stopped blocking after 3 attempts" | The end-of-turn checks still fail and have let the turn end. The warning lists what still needs fixing. |
+| "uncommitted changes still fail the tests (no file has changed since the last failing run)" | The end-of-turn check already blocked once on these exact files and will not loop on them. The tests still fail; the commit rule still stops a commit. |
+| The tests did not run on a commit, or `supermatt test` says "not rerun" | These exact files already passed. `supermatt test --force` reruns them. |
 | Every turn ends with a slow test run | `green_before_stop` runs the tests at the end of each turn that changed code. Turn it off and rely on `tests_before_commit`. |
 | Test runs time out | A run longer than `test_timeout` counts as a failure. Raise it (at most 570 seconds) or point `test_command` at a faster set of tests that still covers what matters. |
 | The same skill appears twice | You also have the original source skills installed, for example `/tdd` next to `/supermatt:implement`. Remove one set so Claude doesn't choose between duplicates. |

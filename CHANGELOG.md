@@ -12,6 +12,11 @@ Less repeated checking, for people who need to move fast. Nothing was removed: t
 - New `solo` preset: `tests_before_commit` block, `review_after_ticket` warn, the other two off.
 - CI runs two jobs (oldest Python on macOS, newest on Linux) instead of four.
 
+## 0.4.0
+
+- New `/supermatt:drift` checks a prompt, a plan or work in progress against what you actually approved. It lists each departure under "goes against what you approved" or "goes beyond what you approved", recommends trash, keep or change for each, and waits for your ruling before rewriting or undoing anything. Only your own words count as approval; an edited spec does not.
+- `run` calls it mid-ticket when it cannot trace what it is building to the ticket, the spec or your words. Kept items go into the spec and a ticket; trashed commits are reverted, never rewritten.
+
 ## 0.3.0
 
 `/supermatt:advise` and `/supermatt:setup` catch the mistakes found in two real planning sessions:
