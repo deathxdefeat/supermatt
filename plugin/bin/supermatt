@@ -31,6 +31,9 @@ PRESETS = {
     "standard": {"tests_before_commit": "block", "ticket_before_code": "warn",
                  "review_after_ticket": "block", "green_before_stop": "block"},
     "light": dict.fromkeys(RULES, "warn"),
+    # One developer moving fast: the commit gate stays, the per-turn and per-edit checks go.
+    "solo": {"tests_before_commit": "block", "ticket_before_code": "off",
+             "review_after_ticket": "warn", "green_before_stop": "off"},
     "off": dict.fromkeys(RULES, "off"),
 }
 DEFAULTS = {
@@ -44,6 +47,7 @@ DEFAULTS = {
         "branch_prefix": "",
         "worktree": False,
         "ticket_agents": False,
+        "review_agents": False,
         "finish": "ask",
     },
     "enforce": PRESETS["standard"],
@@ -149,7 +153,7 @@ def config_problems(config):
     if not (isinstance(config["pipeline"]["branch_prefix"], str)
             and re.fullmatch(r"[A-Za-z0-9._/-]*", config["pipeline"]["branch_prefix"])):
         problems.append("pipeline.branch_prefix must be a string of letters, digits and . _ / -")
-    for name in ("branch", "worktree", "ticket_agents"):
+    for name in ("branch", "worktree", "ticket_agents", "review_agents"):
         if not isinstance(config["pipeline"][name], bool):
             problems.append(f"pipeline.{name} must be true or false")
     return problems
@@ -196,7 +200,7 @@ def require_config(root):
 
 def load_state(root):
     state = {"feature": None, "stage": None, "base": None, "ticket": None, "tickets": {}, "green": None,
-             "stop_blocks": 0}
+             "red": None, "stop_blocks": 0}
     try:
         saved = read_json(os.path.join(state_home(root), STATE))
     except (OSError, ValueError):
@@ -328,7 +332,8 @@ def cmd_status(args, root):
     p = config["pipeline"]
     print(f"pipeline: interview={p['interview']} pause_at={','.join(p['pause_at']) or '-'} "
           f"branch={str(p['branch']).lower()}{' (prefix ' + p['branch_prefix'] + ')' if p['branch_prefix'] else ''} worktree={str(p['worktree']).lower()} "
-          f"ticket_agents={str(p['ticket_agents']).lower()} finish={p['finish']}")
+          f"ticket_agents={str(p['ticket_agents']).lower()} review_agents={str(p['review_agents']).lower()} "
+          f"finish={p['finish']}")
 
 
 def cmd_start(args, root):
@@ -365,6 +370,23 @@ def cmd_trust(args, root):
     config = require_config(root)
     trust(root)
     print(f"trusted {CONFIG} in {root}; hooks will run: {config['test_command'] or '(no test command)'}")
+
+
+def cmd_test(args, root):
+    config = require_config(root)
+    if not is_trusted(root):
+        raise UsageError(f"this machine has not trusted {CONFIG}; review it, then run `supermatt trust`")
+    if not config["test_command"]:
+        print("no test command set (`supermatt config test_command \"<cmd>\"`); nothing to run")
+        return 0
+    state = load_state(root)
+    passed, tail, ran = ensure_green(config, root, state, force=args.force)
+    save_state(root, state)
+    if not ran:
+        print(f"green: these files already passed `{config['test_command']}`, so it was not rerun (--force reruns it)")
+        return 0
+    print(f"$ {config['test_command']}\n{tail}\n{'green' if passed else 'red'}")
+    return 0 if passed else 1
 
 
 def cmd_ticket(args, root):
@@ -410,35 +432,80 @@ def run_tests(config, root):
     return out.returncode == 0, tail
 
 
-def changed_fingerprint(config, root):
-    """Hash the content of changed, non-exempt files; None when there are none."""
-    out = subprocess.run(["git", "status", "--porcelain", "-z", "--untracked-files=all"], cwd=root,
-                         capture_output=True, text=True)
-    if out.returncode != 0:
-        return None
-    paths, fields = [], out.stdout.split("\0")
+def git_out(root, *args, stdin=None):
+    out = subprocess.run(["git", *args], cwd=root, input=stdin, capture_output=True, text=True,
+                         errors="surrogateescape")
+    return out.stdout if out.returncode == 0 else None
+
+
+def tree_fingerprint(config, root):
+    """Return (code, full, dirty) for the working tree as it stands.
+
+    `code` hashes the non-exempt files, `full` every file, and `dirty` says whether a non-exempt file is
+    uncommitted. Blob ids come from the index for unchanged files and from `git hash-object` for changed
+    ones, so a tree has the same fingerprint just before a commit and just after it, and nothing is
+    written to the repo. Both hashes are None when git cannot give them; callers then run the tests.
+    """
+    listed = git_out(root, "ls-files", "-s", "-z")
+    status = git_out(root, "status", "--porcelain", "-z", "--untracked-files=all")
+    if listed is None or status is None:
+        return None, None, False
+    blobs = {}
+    for entry in listed.split("\0"):
+        meta, _, rel = entry.partition("\t")
+        if rel:
+            blobs[rel] = meta.split()[1]
+    changed, fields = [], status.split("\0")
     i = 0
     while i < len(fields):
         entry = fields[i]
         i += 1
         if len(entry) < 4:
             continue
+        changed.append(entry[3:])
         if entry[0] in "RC":
-            i += 1  # the rename source follows as its own field
-        rel = entry[3:]
+            changed.append(fields[i])  # the rename source follows as its own field
+            i += 1
+    to_hash = []
+    for rel in changed:
+        path = os.path.join(root, rel)
+        if os.path.islink(path):
+            blobs[rel] = "link:" + os.readlink(path)
+        elif os.path.isfile(path):
+            to_hash.append(rel)
+        elif os.path.isdir(path):
+            blobs[rel] = "dir"
+        else:
+            blobs.pop(rel, None)
+    if to_hash:
+        hashed = git_out(root, "hash-object", "--stdin-paths", stdin="\n".join(to_hash) + "\n")
+        ids = hashed.split() if hashed is not None else []
+        if len(ids) != len(to_hash):
+            return None, None, True
+        blobs.update(zip(to_hash, ids))
+    code, full = hashlib.sha256(), hashlib.sha256()
+    for rel in sorted(blobs):
+        line = f"{rel}\0{blobs[rel]}\0".encode("utf-8", "surrogateescape")
+        full.update(line)
         if not exempt(config, rel):
-            paths.append(rel)
-    if not paths:
-        return None
-    h = hashlib.sha256()
-    for rel in sorted(paths):
-        h.update(rel.encode() + b"\0")
-        try:
-            with open(os.path.join(root, rel), "rb") as f:
-                h.update(f.read())
-        except OSError:
-            h.update(b"<deleted>")
-    return h.hexdigest()
+            code.update(line)
+    return code.hexdigest(), full.hexdigest(), any(not exempt(config, rel) for rel in changed)
+
+
+def ensure_green(config, root, state, force=False):
+    """Run the tests unless these files already passed them. Return (passed, tail of output, ran)."""
+    if not force:
+        code = tree_fingerprint(config, root)[0]
+        if code and code == state["green"]:
+            return True, "", False
+    passed, tail = run_tests(config, root)
+    # Fingerprint after the run: it may itself leave files behind (coverage, caches).
+    code, full, _ = tree_fingerprint(config, root)
+    if passed:
+        state["green"], state["red"] = code, None
+    else:
+        state["red"] = full
+    return passed, tail, True
 
 
 def emit(obj):
@@ -452,7 +519,10 @@ def hook_pre_tool(event, root, config):
         level = enforce["tests_before_commit"]
         if level == "off" or not config["test_command"]:
             return 0
-        passed, tail = run_tests(config, root)
+        state = load_state(root)
+        passed, tail, ran = ensure_green(config, root, state)
+        if ran:
+            save_state(root, state)
         if passed:
             return 0
         msg = f"supermatt: tests fail, so this commit is {'blocked' if level == 'block' else 'unverified'}.\n" \
@@ -493,13 +563,13 @@ def hook_stop(event, root, config):
     level = enforce["green_before_stop"]
     # Mid-ticket red is part of test-first work; the commit rule guards the ticket's end.
     if level != "off" and config["test_command"] and active != "implementing":
-        fp = changed_fingerprint(config, root)
-        if fp and fp != state["green"]:
-            passed, tail = run_tests(config, root)
-            if passed:
-                # Recompute: a test run may itself leave files behind (coverage, caches).
-                state["green"] = changed_fingerprint(config, root)
-            else:
+        code, full, dirty = tree_fingerprint(config, root)
+        if dirty and full and full == state["red"]:
+            # Blocking again would only repeat the last turn: nothing has changed since that red run.
+            warns.append("uncommitted changes still fail the tests (no file has changed since the last failing run).")
+        elif dirty and not (code and code == state["green"]):
+            passed, tail, _ = ensure_green(config, root, state, force=True)
+            if not passed:
                 msg = f"uncommitted changes fail the tests.\n$ {config['test_command']}\n{tail}"
                 (blocks if level == "block" else warns).append(msg)
     if blocks and state["stop_blocks"] < MAX_STOP_BLOCKS:
@@ -603,6 +673,8 @@ def main(argv=None):
                    help="the stage to start at, when earlier stages were done outside the pipeline")
     p = sub.add_parser("stage", help="record the pipeline stage")
     p.add_argument("stage", choices=STAGES)
+    p = sub.add_parser("test", help="run the test command, unless these files already passed it")
+    p.add_argument("--force", action="store_true", help="rerun even when these files already passed")
     p = sub.add_parser("ticket", help="record a ticket's state")
     p.add_argument("id")
     p.add_argument("status", choices=TICKET_STATES)
@@ -610,7 +682,7 @@ def main(argv=None):
     p.add_argument("event", choices=HOOKS)
     args = parser.parse_args(argv)
     commands = {"init": cmd_init, "config": cmd_config, "status": cmd_status, "start": cmd_start,
-                "stage": cmd_stage, "ticket": cmd_ticket, "trust": cmd_trust, "base": cmd_base, "hook": cmd_hook}
+                "stage": cmd_stage, "test": cmd_test, "ticket": cmd_ticket, "trust": cmd_trust, "base": cmd_base, "hook": cmd_hook}
     try:
         return commands[args.cmd](args, repo_root(os.getcwd())) or 0
     except UsageError as e:

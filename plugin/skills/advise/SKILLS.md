@@ -37,4 +37,4 @@ Keep stages 1 to 3 in one context window. Each ticket can start fresh (`pipeline
 
 - **`/supermatt:advise`**: describe your situation and get a sequenced plan for which of these to run.
 - **`/supermatt:setup`**: once per repo (the pipeline runs it for you).
-- **`/supermatt:status`**: where the pipeline is, and every option: enforcement presets (`strict`, `standard`, `light`, `off`) or single rules, the test command, and pipeline behaviour (interview mode, pause points, branch or worktree, per-ticket subagents, how to finish).
+- **`/supermatt:status`**: where the pipeline is, and every option: enforcement presets (`strict`, `standard`, `light`, `solo`, `off`) or single rules, the test command, and pipeline behaviour (interview mode, pause points, branch or worktree, per-ticket and review subagents, how to finish).

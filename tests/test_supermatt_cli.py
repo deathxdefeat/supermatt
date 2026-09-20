@@ -147,6 +147,15 @@ class CliTest(unittest.TestCase):
         self.assertEqual(self.run_cli("config", "preset", "light").returncode, 0)
         self.assertEqual(set(json.loads(self.run_cli("config").stdout)["enforce"].values()), {"warn"})
 
+    def test_solo_preset_and_review_agents_option(self):
+        self.init("solo")
+        config = json.loads(self.run_cli("config").stdout)
+        self.assertEqual(config["enforce"], {"tests_before_commit": "block", "ticket_before_code": "off",
+                                             "review_after_ticket": "warn", "green_before_stop": "off"})
+        self.assertFalse(config["pipeline"]["review_agents"])
+        self.assertEqual(self.run_cli("config", "pipeline.review_agents", "true").returncode, 0)
+        self.assertIn("review_agents=true", self.run_cli("status").stdout)
+
     # ---- tests before commit ----
 
     def test_commit_is_blocked_when_tests_fail(self):
@@ -164,8 +173,33 @@ class CliTest(unittest.TestCase):
         for command in ("git log --oneline", "git commit-tree HEAD^{tree}", "echo commit"):
             out = self.hook("pre-tool", tool_name="Bash", tool_input={"command": command})
             self.assertEqual((out.returncode, out.stdout), (0, ""), command)
+        self.write("app.py", "x = 2\n")
         out = self.hook("pre-tool", tool_name="Bash", tool_input={"command": "cd sub && git -c a=b commit --amend"})
         self.assertEqual(out.returncode, 2)
+
+    def test_a_tree_that_already_passed_is_not_tested_again(self):
+        self.init()
+        self.write("app.py", "x = 2\n")
+        out = self.run_cli("test")
+        self.assertEqual(out.returncode, 0)
+        self.assertIn("ok", out.stdout)
+        self.fail_tests()  # would fail if rerun
+        commit = dict(tool_name="Bash", tool_input={"command": "git commit -am x"})
+        self.assertEqual(self.hook("pre-tool", **commit).returncode, 0)
+        git(self.repo, "commit", "-qam", "x")
+        # The same files, now committed: still green for the commit hook, the stop hook and `test`.
+        self.assertEqual(self.hook("pre-tool", **commit).returncode, 0)
+        self.assertEqual(self.hook("stop").returncode, 0)
+        self.assertIn("not rerun", self.run_cli("test").stdout)
+        self.assertEqual(self.run_cli("test", "--force").returncode, 1)
+        self.write("app.py", "x = 3\n")
+        self.assertEqual(self.hook("pre-tool", **commit).returncode, 2)
+
+    def test_the_test_command_needs_a_trusted_config(self):
+        self.init()
+        self.write(".supermatt/config.json", json.dumps({"test_command": "touch pwned"}))
+        self.assertEqual(self.run_cli("test").returncode, 1)
+        self.assertFalse(os.path.exists(os.path.join(self.repo, "pwned")))
 
     def test_warn_level_lets_a_red_commit_through_with_a_message(self):
         self.init("light")
@@ -290,11 +324,23 @@ class CliTest(unittest.TestCase):
         self.init("standard")
         self.write("app.py", "x = 2\n")
         self.fail_tests()
-        for _ in range(3):
+        for attempt in range(3):
+            self.write("app.py", f"x = {attempt + 2}\n")
             self.assertEqual(self.hook("stop", stop_hook_active=True).returncode, 2)
+        self.write("app.py", "x = 9\n")
         out = self.hook("stop", stop_hook_active=True)
         self.assertEqual(out.returncode, 0)
         self.assertIn("stopped blocking", json.loads(out.stdout)["systemMessage"])
+
+    def test_stop_does_not_block_twice_on_the_same_red_files(self):
+        self.init("standard")
+        self.write("app.py", "x = 2\n")
+        self.fail_tests()
+        self.assertEqual(self.hook("stop").returncode, 2)
+        out = self.hook("stop", stop_hook_active=True)  # nothing changed: blocking again would only loop
+        self.assertEqual(out.returncode, 0)
+        self.assertIn("still fail", json.loads(out.stdout)["systemMessage"])
+        self.assertEqual(self.state()["stop_blocks"], 0)
 
     # ---- worktrees ----
 

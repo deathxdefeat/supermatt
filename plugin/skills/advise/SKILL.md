@@ -89,7 +89,7 @@ Name which of these it is (more than one can apply) and the evidence for it:
    - `finish`
    - `ticket_agents`
 
-   The pipeline reviews every ticket by design. If the user's rules reject mandatory review or subagents, name that as a conflict here: `review_after_ticket` at `warn` removes the block, but the review step still runs.
+   The pipeline reviews every ticket by design. If the user's rules reject mandatory review or subagents, name that as a conflict here: `review_after_ticket` at `warn` removes the block, but the review step still runs (in this context, with no subagents, unless `pipeline.review_agents` is on). For a user working alone who wants speed, the `solo` preset fits: tests gate every commit, and nothing runs per edit or per turn.
 
    Where a standing rule conflicts (for example, the repo's `CLAUDE.md` says to use a topic branch but the user's global rule says push to main), say so here and let the user decide.
 3. **The plan**: numbered steps. Each gives the exact command (with flags), why it comes at this point, and what finished looks like. Blockers come first: switch to the pinned toolchain before setup, and make the test command pass in the checkout where it will run. Never downgrade a version mismatch to "a risk" because it happened to work before.

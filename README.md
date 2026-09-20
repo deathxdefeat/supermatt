@@ -57,9 +57,9 @@ The evidence is only as strong as your test command (see [Limits](#limits)). For
 | **grill** | Claude questions you in rounds ("grilling"). Each round is a numbered set of questions, each with a recommended answer, and rounds continue until the design is settled. New terms go into `CONTEXT.md` (the project glossary) and hard-to-reverse decisions into `docs/adr/` as ADRs (short architecture decision records). |
 | **spec** | The conversation becomes a written spec in your issue tracker. It names the seams under test (the public interfaces the tests will drive, never internals) and any decisions that were assumed rather than asked. |
 | **tickets** | The spec is split into tracer-bullet tickets: thin slices that each work end to end through every layer, so each one can be checked on its own. Each ticket lists the tickets that must finish before it. |
-| **implement** | One ticket at a time, Claude writes a failing test, writes just enough code to pass it, repeats until the ticket is covered, and commits. It then hands the change to two reviewer sub-agents, which run in parallel, each with a fresh context. One checks your coding standards (files such as `CONTRIBUTING.md` or `CODING_STANDARDS.md`, plus a built-in list of common code smells that applies even if you have none), the other checks the ticket's requirements. Claude then fixes what they find. |
-| **verify** | Every requirement in the spec is checked against fresh evidence: a command run now, its output read. Each gap becomes a new ticket and goes back through implement. |
-| **finish** | The full test suite runs, then the work is merged into the branch it started from, opened as a pull request, or kept on its branch. |
+| **implement** | One ticket at a time, Claude writes a failing test, writes just enough code to pass it, repeats until the ticket is covered, and commits. It then reviews the change twice, once per axis. One pass checks your coding standards (files such as `CONTRIBUTING.md` or `CODING_STANDARDS.md`, plus a built-in list of common code smells that applies even if you have none), the other checks the ticket's requirements. Claude then fixes what they find. With `pipeline.review_agents` on, the two passes run as parallel sub-agents, each with a fresh context. |
+| **verify** | Every requirement in the spec is checked against fresh evidence: a command run now, its output read. Each gap becomes a new ticket and goes back through implement, once: gaps left after that round come to you. |
+| **finish** | The full test suite runs (unless these exact files already passed it), then the work is merged into the branch it started from, opened as a pull request, or kept on its branch. |
 
 The reviewers are still Claude, so treat the review as a second reading, not an independent audit. The hard evidence is your test command passing and the requirement-by-requirement check against the spec, which you see at the second pause.
 
@@ -213,10 +213,10 @@ A ticket's id is its local file number (`01`) or its issue number on a hosted tr
 
 | Rule | Checked when | What it enforces |
 |---|---|---|
-| `tests_before_commit` | Claude runs `git commit` through its Bash tool | The test command runs first. If it fails, the commit is stopped (at `warn`, it goes ahead with a warning), and Claude sees the last 30 lines of output. A pass shows nothing. Does nothing without a `test_command`. |
+| `tests_before_commit` | Claude runs `git commit` through its Bash tool | The test command runs first, unless these exact files already passed it. If it fails, the commit is stopped (at `warn`, it goes ahead with a warning), and Claude sees the last 30 lines of output. A pass shows nothing. Does nothing without a `test_command`. |
 | `ticket_before_code` | Claude edits a file with Edit, Write, MultiEdit or NotebookEdit | The current ticket must be `implementing` or `needs-review`. Files outside the repo, and paths matching `exempt`, are ignored. |
 | `review_after_ticket` | A ticket is started or marked done, and when Claude tries to end its turn | While a committed ticket waits in `needs-review`, no other ticket can start and the turn cannot end. A ticket still `implementing` or `blocked` cannot be marked `done`: it goes through review first. A `blocked` current ticket lets the turn end. |
-| `green_before_stop` | Claude tries to end its turn | Uncommitted changes to non-exempt files must pass the tests. Skipped while the current ticket is `implementing` (failing tests are a normal step in test-first work) or `blocked`, and when those changes already passed. Does nothing without a `test_command`. |
+| `green_before_stop` | Claude tries to end its turn | Uncommitted changes to non-exempt files must pass the tests. Skipped while the current ticket is `implementing` (failing tests are a normal step in test-first work) or `blocked`, and when those changes already passed. It never blocks twice on the same unchanged files. Does nothing without a `test_command`. |
 
 ### Presets
 
@@ -225,9 +225,10 @@ A ticket's id is its local file number (`01`) or its issue number on a hosted tr
 | `strict` | block | block | block | block |
 | `standard` (default) | block | warn | block | block |
 | `light` | warn | warn | warn | warn |
+| `solo` | block | off | warn | off |
 | `off` | off | off | off | off |
 
-`standard` suits most repos. Choose `strict` when every code edit, including debugging and prototypes, should need a ticket first. If your test command is slow (a build plus an end-to-end suite, say), consider turning `green_before_stop` off: it runs the tests at the end of every turn that changed code, even at `warn`, and `tests_before_commit` at `block` remains the gate that matters.
+`standard` suits most repos. Choose `solo` when you work alone and want speed: tests still gate every commit, but nothing runs per edit or at the end of a turn. Choose `strict` when every code edit, including debugging and prototypes, should need a ticket first. If your test command is slow (a build plus an end-to-end suite, say), consider turning `green_before_stop` off: it runs the tests at the end of every turn that changed code, even at `warn`, and `tests_before_commit` at `block` remains the gate that matters.
 
 ### The end-of-turn check
 
@@ -237,7 +238,7 @@ This is the check that stops Claude from ending a turn with work unfinished.
 
 *Shown with `review_after_ticket` and `green_before_stop` at `block`. At `warn`, the turn ends with a warning to you instead of being blocked.*
 
-Once a set of changes passes, the check does not rerun the tests until the code changes again.
+Once a set of files passes, nothing reruns the tests until the code changes again: not this check, not the commit rule, not `verify` or `finish`. The pipeline runs the suite through `supermatt test`, which shares that memory; `supermatt test --force` reruns regardless. If the same unchanged files fail twice in a row, the second end of turn warns you instead of blocking again.
 
 ### Pipeline and other options
 
@@ -252,6 +253,7 @@ Once a set of changes passes, the check does not rerun the tests until the code 
 | `pipeline.branch_prefix` | empty | Prefix for that branch's name, for example `claude/` when your repo names branches that way |
 | `pipeline.worktree` | `false` | Implement in an isolated worktree instead, through `/supermatt:worktree` |
 | `pipeline.ticket_agents` | `false` | Build each ticket in a fresh subagent. The pipeline then checks `supermatt status` and `git log` itself before the next ticket, because a subagent's report is not evidence. That subagent runs both reviews itself, one after the other. |
+| `pipeline.review_agents` | `false` | Run each review's two axes as parallel subagents instead of in the main context. Costs about three reads of the diff instead of one; worth it on large diffs. |
 | `pipeline.finish` | `ask` | `ask` shows a menu. `merge`, `push` (merge, test, then push the base branch), `pr` or `keep` always does that one. |
 
 The equivalent commands:
@@ -282,7 +284,7 @@ The config names a command that the hooks run on their own, so supermatt acts on
 
 | Hook | Fires on | Runs | Claude Code timeout |
 |---|---|---|---|
-| PreToolUse | Bash tool calls | Your `test_command`, only when the command contains `git commit`. Every other Bash call returns before touching git or the disk. | 600 s |
+| PreToolUse | Bash tool calls | Your `test_command`, only when the command contains `git commit` and these files have not already passed it. Every other Bash call returns before touching git or the disk. | 600 s |
 | PreToolUse | Edit, Write, MultiEdit, NotebookEdit | Only `git` lookups and a read of the config and pipeline state | 10 s |
 | Stop | Every end of turn | `git status`, and your `test_command` when uncommitted code changed since the last passing test run | 600 s |
 | SessionStart | Session start, resume, `/clear` and compaction | Only `git` lookups; tells Claude which feature is in flight, or tells you why supermatt is off | 10 s |
@@ -332,6 +334,7 @@ When the plugin is enabled, it is on the `PATH` of Claude's Bash tool, so Claude
 | `start SLUG [--stage STAGE]` | Starts a feature at `grill`, or at a later stage when the earlier work already exists |
 | `stage STAGE` | Records the stage: `grill`, `spec`, `tickets`, `implement`, `verify`, `finish` or `done` |
 | `base BRANCH` | Records the branch the feature started from, which finish merges back into |
+| `test [--force]` | Runs the test command, unless these exact files already passed it |
 | `ticket ID implementing\|blocked\|needs-review\|done` | Records a ticket's state, applying `review_after_ticket` |
 | `hook pre-tool\|stop\|session-start` | The entry point `plugin/hooks/hooks.json` calls, with the hook event as JSON on stdin |
 

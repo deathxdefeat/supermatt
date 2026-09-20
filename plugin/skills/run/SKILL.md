@@ -70,11 +70,15 @@ Keep the grill, spec and tickets stages in one unbroken context: the spec and ti
 
 **Staying in scope.** When you cannot trace what you are about to build, or have built, to the ticket, the spec or the user's own words, call the Skill tool with "supermatt:drift" before doing anything else. It freezes the work and puts the departures to the user; do not settle them yourself.
 
-The enforcement hooks back this loop up when they are on: commits run the tests, code edits need a ticket in progress, and the next ticket waits for the last one's review. If a hook blocks you, fix the cause it names. Never change an enforcement option to get past a block; only the user decides that.
+**One test run per change.** Run the full suite with `SM test`, never the raw test command. It remembers which files passed, so the commit hook, the review, `verify` and `finish` skip the suite when nothing has changed since the last green run. Do not rerun a green suite to be sure; `SM test --force` is for a suspected flaky test.
+
+**Waiting on work.** Do not start anything in the background that the next step depends on. If a command or subagent has produced nothing for ten minutes, stop it, say what hung, and carry on in this context or ask the user; never wait on it indefinitely or start the same thing again.
+
+The enforcement hooks back this loop up when they are on: commits run the tests (unless those files already passed), code edits need a ticket in progress, and the next ticket waits for the last one's review. If a hook blocks you, fix the cause it names. Never change an enforcement option to get past a block; only the user decides that.
 
 ## 5. verify
 
-`SM stage verify`, then call the Skill tool with "supermatt:verify". For each missing or partial requirement, add one ticket (the next free number) that covers exactly that gap, run `SM stage implement`, and go back into the ticket loop. Do not carry a gap into `finish`.
+`SM stage verify`, then call the Skill tool with "supermatt:verify". For each missing or partial requirement, add one ticket (the next free number) that covers exactly that gap, run `SM stage implement`, and go back into the ticket loop. Do not carry a gap into `finish`. That loop runs once: if the second verify still finds gaps, stop and put them to the user instead of opening another round.
 
 ## 6. finish
 

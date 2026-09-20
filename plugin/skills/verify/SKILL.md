@@ -17,7 +17,7 @@ description: Use when about to claim work is complete, fixed, or passing, before
 NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 ```
 
-If you haven't run the verification command in this message, you cannot claim it passes.
+If the verification command has not run on the files as they stand now, you cannot claim it passes. A run counts for the files it ran on: once they change, it is stale; while they have not changed, running it again proves nothing new.
 
 ## The Gate Function
 
@@ -25,7 +25,7 @@ If you haven't run the verification command in this message, you cannot claim it
 BEFORE claiming any status or expressing satisfaction:
 
 1. IDENTIFY: What command proves this claim?
-2. RUN: Execute the FULL command (fresh, complete)
+2. RUN: Execute the FULL command (complete, on the current files)
 3. READ: Full output, check exit code, count failures
 4. VERIFY: Does output confirm the claim?
    - If NO: State actual status with evidence
@@ -39,7 +39,7 @@ Skip any step = lying, not verifying
 
 | Claim | Requires | Not Sufficient |
 |-------|----------|----------------|
-| Tests pass | Test command output: 0 failures | Previous run, "should pass" |
+| Tests pass | Test command output: 0 failures | A run on older files, "should pass" |
 | Linter clean | Linter output: 0 errors | Partial check, extrapolation |
 | Build succeeds | Build command: exit 0 | Linter passing, logs look good |
 | Bug fixed | Test original symptom: passes | Code changed, assumed fixed |
@@ -123,8 +123,10 @@ Skip any step = lying, not verifying
 
 At the `verify` stage of `/supermatt:run`, verification means all of:
 
-1. The configured `test_command` (see `supermatt status`), run fresh on the tree you will integrate: 0 failures.
+1. `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" test` on the tree you will integrate: 0 failures. It runs the configured `test_command`, or reports that these exact files already passed it and skips the rerun; both count as evidence.
 2. The spec, re-read, turned into a line-by-line checklist of its user stories and implementation decisions, each marked met, partial or missing with the evidence (a test name, a command output, a file).
 3. Every ticket for the feature is `done` in `supermatt status` and done or closed in the tracker.
 
 Report gaps as gaps. Each missing or partial requirement becomes one new ticket (the next free number) covering exactly that gap; then `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" stage implement` sends the pipeline back into its ticket loop. A gap is never waved through.
+
+**One round of gap tickets per feature.** If the verify after that round still finds gaps, stop: list them for the user with the evidence, and let them choose between another round, a change to the spec, or shipping without them. Do not open a second round on your own.

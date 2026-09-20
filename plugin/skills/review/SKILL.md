@@ -1,6 +1,6 @@
 ---
 name: review
-description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\"."
+description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Reports the two axes side by side; can run them as parallel sub-agents. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\"."
 ---
 
 Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
@@ -8,7 +8,7 @@ Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 - **Standards**: does the code conform to this repo's documented coding standards?
 - **Spec**: does the code faithfully implement the originating issue / spec?
 
-Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings. If you are yourself a subagent (you cannot spawn agents), run the two axes one after the other, finishing and writing up each before starting the next.
+**Where the axes run.** By default you run both axes yourself, in this context, one after the other: finish and write up Standards before starting Spec, so neither colours the other. That costs one read of the diff instead of three, and nothing can be left waiting on a background agent. Run them as two **parallel sub-agents** instead only when `pipeline.review_agents` is true in `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" status`, or the user asks for sub-agents, and you are not a subagent yourself. Sub-agents earn their cost on a large diff (a whole branch, many files), not on one ticket.
 
 The issue tracker should have been provided to you. If `docs/agents/issue-tracker.md` is missing, tell the user to run `/supermatt:setup`.
 
@@ -57,7 +57,9 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 - **Middle Man**: a class or function that mostly just delegates onward. → cut it, call the real target direct.
 - **Refused Bequest**: a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
 
-### 4. Spawn both sub-agents in parallel
+### 4. Run both axes
+
+Running them yourself, follow the two briefs below as your own instructions, reading the diff once. With sub-agents, spawn both in one message, in the foreground, and wait for both. If one fails or returns nothing, run that axis yourself instead of spawning it again.
 
 **Standards sub-agent prompt** should include:
 
@@ -84,7 +86,7 @@ End with a one-line summary: total findings per axis, and the worst issue _withi
 When the review covers a ticket that `supermatt status` shows as `needs-review`:
 
 1. Fix every finding you judge real: hard standard violations and gaps against the ticket's acceptance criteria always, smells when the fix is cheap and clearly better. Say which findings you are leaving and why.
-2. Run the full test suite, then commit the fixes.
+2. If you changed code, run `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" test` and commit the fixes. With no fixes there is nothing to run: the suite already passed on these files.
 3. Mark the ticket done in the issue tracker (locally, set its `Status:` line to `done`; on a hosted tracker, close the issue, per `docs/agents/issue-tracker.md`) and in supermatt: `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" ticket <id> done`.
 
 ## Why two axes

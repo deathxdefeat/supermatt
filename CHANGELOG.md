@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0
+
+Less repeated checking, for people who need to move fast. Nothing was removed: tests still gate every commit, every ticket is still reviewed, and the spec is still verified.
+
+- The test suite runs once per change. supermatt remembers which files passed, so the commit rule, the end-of-turn check, review, `verify` and `finish` skip the suite when nothing has changed since the last green run. It used to run up to four times per ticket and three more per feature on identical files. New `supermatt test [--force]` is how the skills run the suite.
+- Review runs in the main context by default, one axis after the other, instead of two subagents per ticket. `pipeline.review_agents true` brings the parallel subagents back for large diffs.
+- The end-of-turn check never blocks twice on the same unchanged files; it warns you instead.
+- `verify` opens one round of gap tickets per feature. Gaps left after that come to you instead of looping.
+- `run` never waits indefinitely on a background command or subagent.
+- New `solo` preset: `tests_before_commit` block, `review_after_ticket` warn, the other two off.
+- CI runs two jobs (oldest Python on macOS, newest on Linux) instead of four.
+
 ## 0.3.0
 
 `/supermatt:advise` and `/supermatt:setup` catch the mistakes found in two real planning sessions:

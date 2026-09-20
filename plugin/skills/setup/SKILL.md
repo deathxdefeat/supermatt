@@ -70,12 +70,15 @@ Offer **multi-context** (a root `CONTEXT-MAP.md` pointing to per-context `CONTEX
 | strict | block | block | block | block |
 | standard | block | warn | block | block |
 | light | warn | warn | warn | warn |
+| solo | block | off | warn | off |
 | off | off | off | off | off |
 
 - **tests_before_commit**: a `git commit` runs the test command first; red blocks (or warns about) the commit.
 - **ticket_before_code**: editing code (anything not matched by `exempt`, which defaults to `.scratch/*`, `docs/*`, `.supermatt/*`, `*.md`) needs a ticket in progress.
 - **review_after_ticket**: a committed ticket must be reviewed before the next ticket starts or the session stops.
 - **green_before_stop**: Claude cannot end a turn while uncommitted code fails the tests (it gives up after three tries and tells the user).
+
+Recommend **solo** instead when the user works alone and their standing rules favour speed (pushing straight to the main branch, no mandatory review, no subagents): the commit gate stays, and the per-edit and end-of-turn checks go.
 
 Any single rule can be changed later: `supermatt config enforce.<rule> off|warn|block`.
 
@@ -88,6 +91,7 @@ When the confirming run was slow (a build plus an end-to-end suite, say over a m
 - `pipeline.branch`: create a `<branch_prefix><feature-slug>` branch before implementing (default `true`; set `false` for teams that commit straight to the main branch). `pipeline.branch_prefix` (default empty) follows the repo's branch naming rule, for example `claude/`.
 - `pipeline.worktree`: implement in an isolated worktree via `/supermatt:worktree` (default `false`)
 - `pipeline.ticket_agents`: build each ticket in a fresh subagent instead of this context (default `false`)
+- `pipeline.review_agents`: run each review's two axes as parallel subagents instead of in this context (default `false`; worth its cost on large diffs, not on single tickets)
 - `pipeline.finish`: `ask` (show the merge / PR / keep menu), or always `merge`, `push` (merge, test, then push the base branch, for teams that push straight to main), `pr` or `keep`
 
 ### 3. Confirm and edit

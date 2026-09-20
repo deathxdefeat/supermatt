@@ -53,7 +53,7 @@ A config this machine has approved to run hooks, recorded by repo path and the c
 _Avoid_: allowed, approved repo
 
 **Preset**:
-A named setting for all four enforcement rules at once: strict, standard, light or off.
+A named setting for all four enforcement rules at once: strict, standard, light, solo or off.
 _Avoid_: profile, mode
 
 **Drift**:
@@ -61,5 +61,5 @@ Change the user did not authorize, either against what they approved or beyond i
 _Avoid_: scope creep, deviation
 
 **Pipeline state**:
-The local, gitignored `.supermatt/state.json`: the active feature, its stage, ticket states and the last green test fingerprint.
+The local, gitignored `.supermatt/state.json`: the active feature, its stage, ticket states, and the fingerprints of the files that last passed and last failed the tests.
 _Avoid_: progress file, session

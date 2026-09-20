@@ -120,7 +120,7 @@ if [ -f go.mod ]; then go mod download; fi
 
 ## Step 3: Verify Clean Baseline
 
-Run tests to ensure workspace starts clean. Use the `test_command` from `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" status` when the repo is opted in; otherwise the project's own (`npm test` / `cargo test` / `pytest` / `go test ./...`).
+Run tests to ensure workspace starts clean. Use `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" test` when the repo is opted in (it skips the run when these exact files already passed); otherwise the project's own (`npm test` / `cargo test` / `pytest` / `go test ./...`).
 
 **If tests fail:** Report failures, ask whether to proceed or investigate.
 

@@ -13,7 +13,7 @@ description: Use when implementation is complete, all tests pass, and you need t
 
 ## Step 1: Verify Tests
 
-Run the project's full test suite: the `test_command` in `supermatt status` when the repo is set up, otherwise the project's own (`npm test` / `cargo test` / `pytest` / `go test ./...`).
+Run the project's full test suite: `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" test` when the repo is set up, otherwise the project's own (`npm test` / `cargo test` / `pytest` / `go test ./...`). `supermatt test` skips the run when these exact files already passed (straight after `verify`, say); that still counts as green.
 
 **If tests fail**, report the failures and stop — the menu comes after a green suite:
 
@@ -98,7 +98,8 @@ git checkout <base-branch>
 git pull --ff-only   # only when <base-branch> tracks a remote
 git merge <feature-branch>
 
-# Verify tests on merged result
+# Verify tests on merged result (`supermatt test` skips this when the merge
+# was a fast-forward: the files are the ones that already passed)
 <test command>
 ```
 
@@ -224,7 +225,7 @@ place. If your platform provides a workspace-exit tool, use it.
 
 | Excuse | Reality |
 |--------|---------|
-| "Tests passed earlier this session" | Run the suite on the tree you are about to integrate. A green run only proves the tree it ran on. |
+| "Tests passed earlier this session" | A green run only proves the files it ran on. `supermatt test` knows whether these are those files; let it decide instead of guessing. |
 | "They obviously want it merged" | Integration is the user's decision. Present the menu and wait. |
 | "They seem done with this feature — I'll offer to discard it" | The menu is complete as written. Discard happens only when the user asks for it in so many words. |
 | "'Yeah, get rid of it' counts as confirmation" | Only the typed word `discard` authorizes deletion. |

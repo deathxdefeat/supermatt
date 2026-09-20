@@ -47,7 +47,10 @@ for why.
 - A broken `.supermatt/config.json` makes every hook a no-op rather than
   wedging sessions; `supermatt status` reports the error.
 - The Stop hook blocks at most three times in a row, then lets the turn end
-  with a warning.
+  with a warning. It never blocks twice on the same unchanged files.
+- `supermatt test` and the commit and Stop hooks share one memory of which
+  files passed (`green` in the state file). Skills run the suite through
+  `supermatt test`, never the raw command, so nothing is tested twice.
 - Hooks act only on a trusted config (`supermatt trust`; stored outside the
   repo). Tests set `SUPERMATT_TRUST_FILE` to a temp path; never let a test
   write the real trust file.
