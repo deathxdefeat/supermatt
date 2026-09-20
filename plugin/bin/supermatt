@@ -285,9 +285,12 @@ def parse_value(key, current, text):
         return text == "true"
     if isinstance(current, int):
         try:
-            return int(text)
+            number = int(text)
         except ValueError:
             raise UsageError(f"{key} must be a number")
+        if key == "test_timeout" and not 0 < number <= MAX_TEST_TIMEOUT:
+            raise UsageError(f"test_timeout must be 1-{MAX_TEST_TIMEOUT} seconds (hooks are killed after 600)")
+        return number
     if key == "test_command":
         return text or None
     raise UsageError(f"{key} cannot be set from the command line; edit {CONFIG}")

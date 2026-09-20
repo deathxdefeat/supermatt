@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+- `supermatt config test_timeout` now rejects a value outside 1-570 seconds. It used to accept any number, and the hooks then treated the config as invalid and switched off.
+
 ## 0.5.0
 
 Less repeated checking, for people who need to move fast. Nothing was removed: tests still gate every commit, every ticket is still reviewed, and the spec is still verified.

@@ -142,8 +142,10 @@ class CliTest(unittest.TestCase):
         self.assertIs(config["pipeline"]["ticket_agents"], True)
         self.assertEqual(config["pipeline"]["interview"], "full")
         for bad in (("enforce.ticket_before_code", "loud"), ("pipeline.pause_at", "lunch"),
-                    ("pipeline.branch", "yes"), ("nope", "1")):
+                    ("pipeline.branch", "yes"), ("nope", "1"), ("test_timeout", "900"), ("test_timeout", "0")):
             self.assertEqual(self.run_cli("config", *bad).returncode, 1, bad)
+        self.assertEqual(self.run_cli("config", "test_timeout", "570").returncode, 0)
+        self.assertEqual(self.run_cli("status").returncode, 0)
         self.assertEqual(self.run_cli("config", "preset", "light").returncode, 0)
         self.assertEqual(set(json.loads(self.run_cli("config").stdout)["enforce"].values()), {"warn"})
 
