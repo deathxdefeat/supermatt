@@ -15,6 +15,7 @@ Less repeated checking, for people who need to move fast. Nothing was removed: t
 - `run` never waits indefinitely on a background command or subagent.
 - New `solo` preset: `tests_before_commit` block, `review_after_ticket` warn, the other two off.
 - CI runs two jobs (oldest Python on macOS, newest on Linux) instead of four.
+- Repo only, not the plugin: a commit and push guard (`.githooks/leak_check.py`) refuses session files, home-directory paths, email addresses, credentials and personal commit identities, and the session directories are gitignored.
 
 ## 0.4.0
 

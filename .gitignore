@@ -4,3 +4,16 @@ __pycache__/
 
 # Rendered diagram HTML (large); the specs in docs/diagrams/*.json are the source
 docs/diagrams/*.html
+
+# Session and work files. This repo is public: none of these are ever committed.
+# (.githooks/leak_check.py refuses them even if a rule here is removed.)
+.scratch/
+.claude/
+.codex/
+.supermatt/
+handoffs/
+/memory/
+*.jsonl
+.env*
+*.pem
+*.key

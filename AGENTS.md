@@ -8,6 +8,23 @@ Hosted at github.com/deathxdefeat/supermatt; `main` is the only branch and CI
 runs the tests on every push. The only stack is Python 3, standard library
 only. There is no typechecker. Run every command before documenting it.
 
+## This repo is public
+
+Nothing from a working session is ever committed here: no specs or tickets
+(`.scratch/`), no `.claude/`, `.codex/` or `.supermatt/` files, no handoffs,
+memory, transcripts or env files, no home-directory paths, no real names,
+emails, employers or clients, and no credentials. Examples in docs and tests
+use placeholders (`~`, `you@example.com`).
+
+- `.githooks/leak_check.py` enforces this on every commit and push. After
+  cloning, turn it on: `git config core.hooksPath .githooks`. Never bypass it
+  with `--no-verify`; fix the finding, or ask the user.
+- Words only the owner knows to be private go in
+  `~/.config/supermatt/private-patterns` (one regex per line), which stays on
+  their machine. Never copy its contents into the repo, a commit message or a
+  test.
+- Commit identities use a GitHub noreply address.
+
 ## Overview
 
 supermatt is a Claude Code plugin (`plugin/`): a fused skill set invoked as
@@ -19,8 +36,8 @@ for why.
 ## Architecture
 
 - `plugin/.claude-plugin/plugin.json`: the manifest.
-- `plugin/skills/<name>/`: the fused skills. `run`, `status`, `advise` and `drift` are original;
-  the rest are adapted from the source skills (see `plugin/NOTICE.md`).
+- `plugin/skills/<name>/`: the fused skills. `run`, `status` and `drift` are original, and so is
+  `advise` apart from its skills map; the rest are adapted from the source skills (see `plugin/NOTICE.md`).
 - `plugin/bin/supermatt`: the stdlib Python command the skills and hooks call
   for options (`.supermatt/config.json`, committed) and pipeline state
   (`.supermatt/state.json`, gitignored).
@@ -34,6 +51,7 @@ for why.
 ## Commands
 
 - Tests: `python3 -m unittest` (run from the repo root)
+- Leak check over every tracked file: `python3 .githooks/leak_check.py tree`
 - Validate the marketplace and plugin: `claude plugin validate . && claude plugin validate plugin`
 - Develop against a live install: link `plugin/` to
   `~/.claude/skills/supermatt`; `claude plugin list` then shows
@@ -61,7 +79,7 @@ for why.
 
 ### Issue tracker
 
-Issues and specs live as local markdown files under `.scratch/<feature-slug>/`. See `docs/agents/issue-tracker.md`.
+Issues and specs live as local markdown files under `.scratch/<feature-slug>/`, which is gitignored: they stay on this machine. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

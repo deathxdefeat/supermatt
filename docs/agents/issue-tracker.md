@@ -1,6 +1,6 @@
 # Issue tracker: Local Markdown
 
-Issues and specs for this repo live as markdown files in `.scratch/`.
+Issues and specs for this repo live as markdown files in `.scratch/`. The directory is gitignored and the leak check refuses it: this repo is public, so specs and tickets stay on the machine that wrote them.
 
 ## Conventions
 
