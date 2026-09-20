@@ -6,7 +6,7 @@
 
 supermatt is a Claude Code plugin that keeps a feature moving from idea to merged code, and keeps you on track while it does. It takes the engineering skills from [Matt Pocock's skills](https://github.com/mattpocock/skills), adds a few from [obra/superpowers](https://github.com/obra/superpowers) and a few of its own, and runs them as one guided process. Claude knows which step comes next, starts it for you, and remembers where you stopped.
 
-I built it because I needed it: brain injuries from military service left me with a memory that fails in odd ways and a habit of wandering off the real work. supermatt is the bumpers in my bowling lane, and [the full story is below](#why-it-exists).
+I built supermatt because I needed it: several traumatic brain injuries from active-duty military service during the Global War on Terror left me with adult ADHD and a memory that fails in odd ways. It works like the bumpers in a bowling lane, so when a tangent catches my attention the process is still there pointing at the next step, and if you have ever lost an afternoon to one, it will do the same for you.
 
 <p align="center">
   <b><a href="#install">Install</a></b> ·
@@ -18,7 +18,6 @@ I built it because I needed it: brain injuries from military service left me wit
   <b><a href="#guardrails">Guardrails</a></b> ·
   <b><a href="#security">Security</a></b> ·
   <b><a href="#troubleshooting">Troubleshooting</a></b> ·
-  <b><a href="#why-it-exists">Why it exists</a></b> ·
   <b><a href="#docs">Docs</a></b>
 </p>
 
@@ -199,21 +198,6 @@ Trust covers the command, not the code it runs, so review an outside branch befo
 | Every turn ends with a slow test run | Turn `green_before_stop` off and rely on `tests_before_commit`. |
 
 [More symptoms](docs/troubleshooting.md).
-
-<p align="right"><a href="#supermatt">↑ top</a></p>
-
-## Why it exists
-
-I built supermatt because I needed it. I have several traumatic brain injuries from active-duty military service during the Global War on Terror, and adult ADHD as a direct result of them. My memory fails in odd ways and I distract myself easily. I start a feature, wander into something interesting, and forget to push the real work forward.
-
-I was using two excellent skill collections, and each solved half of my problem.
-
-- **Superpowers guides you.** Its skills start by themselves and lead you through a process from idea to finished work, so you always know what comes next. That guidance is what keeps me on track. But in my projects it spread its own files and conventions through the repo, and when I called one of Matt Pocock's skills partway through, the session, branch or worktree often ended up in a mess.
-- **Matt Pocock's skills are the ones I prefer to build with**, almost every time. But you start each one yourself and nothing connects them. I would forget to use the one I needed and regret it later. I didn't know what order they belonged in as a process. Once I had started, I couldn't tell when a step was finished or which skill came next.
-
-I wanted the guidance of Superpowers with the skills of Matt Pocock, and nothing offered that, so I fused them. For me the result works like the bumpers in a bowling lane. When something off-course catches my attention, I note it for later and keep going, because the process is still there pointing at the next step.
-
-You don't need a brain injury to get something from this. If you have lost an afternoon to a tangent, skipped a step you knew mattered, or come back to a project with no idea where you left off, you have the same problem in a milder form.
 
 <p align="right"><a href="#supermatt">↑ top</a></p>
 
