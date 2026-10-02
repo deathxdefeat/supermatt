@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -444,12 +445,14 @@ def git_out(root, *args, stdin=None):
 def tree_fingerprint(config, root):
     """Return (fingerprint, dirty) for the working tree as it stands.
 
-    `fingerprint` hashes every file git sees, exempt ones included: a test can read docs or markdown, so a
-    pass only vouches for the exact files it ran on. The pipeline's own state file is left out, because
-    supermatt rewrites it after every run. `dirty` says whether a non-exempt file is uncommitted. Blob ids
-    come from the index for unchanged files and from `git hash-object` for changed ones, so a tree has the
-    same fingerprint just before a commit and just after it, and nothing is written to the repo. The
-    fingerprint is None when git cannot give it; callers then run the tests.
+    `fingerprint` hashes the test command and every file git sees, with its executable bit: exempt files
+    are included because a test can read docs or markdown, and a changed submodule or nested repository is
+    hashed through its own files. So a pass only vouches for the exact files and command it ran on. The
+    pipeline's own state file is left out, because supermatt rewrites it after every run. `dirty` says
+    whether a non-exempt file is uncommitted. Blob ids come from the index for unchanged files and from
+    `git hash-object` for changed ones, so a tree has the same fingerprint just before a commit and just
+    after it, and nothing is written to the repo. The fingerprint is None when git cannot give it; callers
+    then run the tests.
     """
     listed = git_out(root, "ls-files", "-s", "-z")
     status = git_out(root, "status", "--porcelain", "-z", "--untracked-files=all")
@@ -459,7 +462,8 @@ def tree_fingerprint(config, root):
     for entry in listed.split("\0"):
         meta, _, rel = entry.partition("\t")
         if rel:
-            blobs[rel] = meta.split()[1]
+            mode, blob = meta.split()[:2]
+            blobs[rel] = f"{mode} {blob}"
     changed, fields = [], status.split("\0")
     i = 0
     while i < len(fields):
@@ -473,15 +477,20 @@ def tree_fingerprint(config, root):
             i += 1
     blobs.pop(STATE, None)
     changed = [rel for rel in changed if rel != STATE]
-    to_hash = []
+    to_hash, modes = [], []
     for rel in changed:
         path = os.path.join(root, rel)
         if os.path.islink(path):
             blobs[rel] = "link:" + os.readlink(path)
         elif os.path.isfile(path):
             to_hash.append(rel)
+            modes.append("100755" if os.stat(path).st_mode & stat.S_IXUSR else "100644")  # as git records it
         elif os.path.isdir(path):
-            blobs[rel] = "dir"
+            # A changed submodule or an untracked nested repository: git reports only its directory.
+            nested = tree_fingerprint(config, path)[0] if os.path.exists(os.path.join(path, ".git")) else None
+            if nested is None:
+                return None, True
+            blobs[rel.rstrip("/")] = "repo " + nested
         else:
             blobs.pop(rel, None)
     if to_hash:
@@ -489,8 +498,9 @@ def tree_fingerprint(config, root):
         ids = hashed.split() if hashed is not None else []
         if len(ids) != len(to_hash):
             return None, True
-        blobs.update(zip(to_hash, ids))
+        blobs.update((rel, f"{mode} {blob}") for rel, mode, blob in zip(to_hash, modes, ids))
     digest = hashlib.sha256()
+    digest.update(f"command\0{config['test_command'] or ''}\0".encode("utf-8", "surrogateescape"))
     for rel in sorted(blobs):
         digest.update(f"{rel}\0{blobs[rel]}\0".encode("utf-8", "surrogateescape"))
     return digest.hexdigest(), any(not exempt(config, rel) for rel in changed)

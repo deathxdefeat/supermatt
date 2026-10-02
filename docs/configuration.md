@@ -23,7 +23,7 @@ A ticket's id is its local file number (`01`) or its issue number on a hosted tr
 | `tests_before_commit` | Claude runs `git commit` through its Bash tool | The test command runs first, unless these exact files already passed it. If it fails, the commit is stopped (at `warn`, it goes ahead with a warning), and Claude sees the last 30 lines of output. A pass shows nothing. Does nothing without a `test_command`. |
 | `ticket_before_code` | Claude edits a file with Edit, Write, MultiEdit or NotebookEdit | The current ticket must be `implementing` or `needs-review`. Files outside the repo, and paths matching `exempt`, are ignored. |
 | `review_after_ticket` | A ticket is started or marked done, and when Claude tries to end its turn | While a committed ticket waits in `needs-review`, no other ticket can start and the turn cannot end. A ticket still `implementing` or `blocked` cannot be marked `done`: it goes through review first. A `blocked` current ticket lets the turn end. |
-| `green_before_stop` | Claude tries to end its turn | Uncommitted changes to non-exempt files must pass the tests. Skipped while the current ticket is `implementing` (failing tests are a normal step in test-first work) or `blocked`, and when those changes already passed. It never blocks twice on the same unchanged files. Does nothing without a `test_command`. |
+| `green_before_stop` | Claude tries to end its turn | While non-exempt files have uncommitted changes, the working tree must pass the tests. Skipped while the current ticket is `implementing` (failing tests are a normal step in test-first work) or `blocked`, and when exactly these files already passed. It never blocks twice on the same unchanged files. Does nothing without a `test_command`. |
 
 ## Presets
 

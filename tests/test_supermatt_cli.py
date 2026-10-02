@@ -211,7 +211,7 @@ class CliTest(unittest.TestCase):
         commit = dict(tool_name="Bash", tool_input={"command": "git commit -am docs"})
         self.assertEqual(self.hook("pre-tool", **commit).returncode, 0)
         self.write("README.md", "changed\n")
-        self.assertEqual(self.hook("stop").returncode, 0)  # the end-of-turn rule is about code
+        self.assertEqual(self.hook("stop").returncode, 0)  # no uncommitted code: the end-of-turn rule waits
         out = self.hook("pre-tool", **commit)
         self.assertEqual(out.returncode, 2)
         self.assertIn("FAILED", out.stderr)
@@ -221,6 +221,50 @@ class CliTest(unittest.TestCase):
         self.assertEqual(self.run_cli("test").returncode, 0)
         self.run_cli("config", "test_command", "echo FAILED; exit 1")
         self.assertEqual(self.hook("pre-tool", **commit).returncode, 2)
+
+    def test_a_new_test_command_runs_even_when_git_cannot_see_the_config(self):
+        self.init()
+        self.write(".gitignore", ".supermatt/\n")
+        self.assertEqual(self.run_cli("test").returncode, 0)
+        self.run_cli("config", "test_command", "echo FAILED; exit 1")
+        out = self.hook("pre-tool", tool_name="Bash", tool_input={"command": "git commit -am x"})
+        self.assertEqual(out.returncode, 2)
+
+    def test_a_pass_covers_executable_bits_and_nested_repositories(self):
+        self.init()
+        self.write("run.sh", "#!/bin/sh\ngrep -q ok vendor/STATUS\n")
+        os.chmod(os.path.join(self.repo, "run.sh"), 0o755)
+        os.makedirs(os.path.join(self.repo, "vendor"))
+        git(os.path.join(self.repo, "vendor"), "init", "-q")
+        self.write("vendor/STATUS", "ok\n")
+        self.run_cli("config", "test_command", "./run.sh")
+        self.assertEqual(self.run_cli("test").returncode, 0)
+        commit = dict(tool_name="Bash", tool_input={"command": "git commit -am x"})
+        self.write("vendor/STATUS", "bad\n")  # git reports only `vendor/`
+        self.assertEqual(self.hook("pre-tool", **commit).returncode, 2)
+        self.write("vendor/STATUS", "ok\n")
+        self.assertEqual(self.hook("pre-tool", **commit).returncode, 0)  # the files that passed, not rerun
+        os.chmod(os.path.join(self.repo, "run.sh"), 0o644)
+        self.assertEqual(self.hook("pre-tool", **commit).returncode, 2)
+
+    def test_a_pass_covers_what_a_submodule_points_at(self):
+        self.init()
+        sub = os.path.join(os.path.dirname(self.repo), "sub")
+        os.makedirs(sub)
+        git(sub, "init", "-q")
+        with open(os.path.join(sub, "STATUS"), "w") as f:
+            f.write("ok\n")
+        git(sub, "add", "-A")
+        git(sub, "-c", "user.email=t@example.com", "-c", "user.name=t", "commit", "-qm", "ok")
+        git(self.repo, "-c", "protocol.file.allow=always", "submodule", "add", "-q", sub, "lib")
+        git(self.repo, "commit", "-qm", "lib")
+        self.run_cli("config", "test_command", "grep -q ok lib/STATUS")
+        lib = os.path.join(self.repo, "lib")
+        commit = dict(tool_name="Bash", tool_input={"command": "git commit -am x"})
+        for text, verdict in (("ok, moved\n", 0), ("bad\n", 2)):  # the pointer moves, then moves again
+            self.write("lib/STATUS", text)
+            git(lib, "-c", "user.email=t@example.com", "-c", "user.name=t", "commit", "-qam", text)
+            self.assertEqual(self.hook("pre-tool", **commit).returncode, verdict, text)
 
     def test_the_test_command_needs_a_trusted_config(self):
         self.init()
@@ -358,6 +402,7 @@ class CliTest(unittest.TestCase):
 
     def test_stop_does_not_block_twice_on_the_same_red_files(self):
         self.init("standard")
+        self.write(".gitignore", "")  # supermatt's own state file, rewritten by every hook, is not a change
         self.write("app.py", "x = 2\n")
         self.fail_tests()
         self.assertEqual(self.hook("stop").returncode, 2)

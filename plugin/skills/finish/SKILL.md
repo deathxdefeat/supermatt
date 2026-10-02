@@ -98,8 +98,9 @@ git checkout <base-branch>
 git pull --ff-only   # only when <base-branch> tracks a remote
 git merge <feature-branch>
 
-# Verify tests on merged result (`supermatt test` skips this when the merge
-# was a fast-forward: the files are the ones that already passed)
+# Verify tests on merged result (`supermatt test` skips this only when the
+# merged checkout holds exactly the files that already passed, untracked
+# files included, as after a fast-forward into a clean checkout)
 <test command>
 ```
 

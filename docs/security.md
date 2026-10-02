@@ -19,7 +19,7 @@ The config names a command that the hooks run on their own, so supermatt acts on
 |---|---|---|---|
 | PreToolUse | Bash tool calls | Your `test_command`, only when the command contains `git commit` and these files have not already passed it. Every other Bash call returns before touching git or the disk. | 600 s |
 | PreToolUse | Edit, Write, MultiEdit, NotebookEdit | Only `git` lookups and a read of the config and pipeline state | 10 s |
-| Stop | Every end of turn | `git status`, and your `test_command` when uncommitted code changed since the last passing test run. Files that failed last time and have not changed since are not run again. | 600 s |
+| Stop | Every end of turn | `git status`, and your `test_command` when code is uncommitted and any file has changed since the last passing test run. Files that failed last time and have not changed since are not run again. | 600 s |
 | SessionStart | Session start, resume, `/clear` and compaction | Only `git` lookups; tells Claude which feature is in flight, or tells you why supermatt is off | 10 s |
 
 Apart from your `test_command`, which runs through the shell in the repo root and is stopped after `test_timeout` seconds, the hooks run only read-only `git` commands, and the only file they write is `.supermatt/state.json`.
@@ -30,7 +30,7 @@ Apart from your `test_command`, which runs through the shell in the repo root an
 - **Commits are recognised by pattern.** `tests_before_commit` looks for `git commit` in a Bash command, including forms like `git -C path commit`. A commit made through a git alias or a script is not seen, and commits you make in your own terminal are never touched.
 - **Tests run on the working tree**, not only the staged changes.
 - **The end-of-turn check gives up.** After three blocks in a row it lets the turn end with a warning, and it never blocks twice on the same unchanged files, so a session cannot get stuck. A stubborn failure gets through with that warning.
-- **A remembered pass is about files, not the world.** supermatt skips the suite only when exactly the same files already passed, exempt files and `.supermatt/config.json` (so the test command) included. It cannot see a database, a service or an environment variable changing underneath them. `supermatt test --force` reruns the suite when you suspect that, or a flaky test.
+- **A remembered pass is about files, not the world.** supermatt skips the suite only when the same test command already passed on exactly the same files: their contents and executable bits, exempt files, and what submodules and nested repositories hold. It cannot see a database, a service or an environment variable changing underneath them. `supermatt test --force` reruns the suite when you suspect that, or a flaky test.
 - **The rules are only as good as the test command.** A suite that doesn't cover the outcome you care about stays green while the product is broken. That is why `/supermatt:advise` starts such cases with an acceptance test.
 - **Relaxing a rule is policy, not a lock.** The skills tell Claude never to change an option to get past a block. Claude could still run `supermatt config` itself; because the config is committed, such a change shows up in `git status`.
 - **The hooks never break a session.** Bad hook input, a broken config or a bug inside supermatt never fail a tool call: a bug is reported as a message, a broken or untrusted config is reported when a session starts, and otherwise the hook quietly does nothing.

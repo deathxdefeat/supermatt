@@ -2,7 +2,7 @@
 
 ## 0.5.2
 
-- A remembered pass now covers every file, exempt ones included. It used to ignore `exempt` paths (`*.md`, `docs/*`, `.supermatt/*` by default), so a commit that changed only those skipped the tests even when the tests read them, and a changed `test_command` was not run until code changed. Commits that touch only docs now run the suite; the end-of-turn check still runs only for code.
+- A remembered pass now vouches only for exactly the files and test command it ran on. It used to ignore `exempt` paths (`*.md`, `docs/*`, `.supermatt/*` and `.scratch/*` by default), executable bits, and a submodule or nested repository changing a second time, and it kept counting after `test_command` changed. So a commit could skip the suite on files the suite never saw. Commits that touch only docs now run the suite, and so does `verify` after a local tracker's ticket file changes; the end-of-turn check still runs only while code is uncommitted.
 
 ## 0.5.1
 
