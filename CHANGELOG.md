@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.2
+
+- A remembered pass now covers every file, exempt ones included. It used to ignore `exempt` paths (`*.md`, `docs/*`, `.supermatt/*` by default), so a commit that changed only those skipped the tests even when the tests read them, and a changed `test_command` was not run until code changed. Commits that touch only docs now run the suite; the end-of-turn check still runs only for code.
+
 ## 0.5.1
 
 - `supermatt config test_timeout` now rejects a value outside 1-570 seconds. It used to accept any number, and the hooks then treated the config as invalid and switched off.

@@ -1,5 +1,6 @@
 import json
 import os
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -26,8 +27,11 @@ class CliTest(unittest.TestCase):
         git(self.repo, "config", "user.email", "t@example.com")
         git(self.repo, "config", "user.name", "t")
         self.write("app.py", "x = 1\n")
-        # The fake test suite passes while docs/PASS exists. docs/ is exempt, so toggling it
-        # flips the suite without changing which code the hooks see as changed.
+        # The fake test suite passes while a flag outside the repo exists, so tests can flip it without
+        # changing any file the hooks fingerprint. It also needs docs/PASS in the tree it runs in.
+        self.flag = os.path.join(tmp.name, "PASS")
+        open(self.flag, "w").close()
+        self.suite = f"test -f docs/PASS && test -f {shlex.quote(self.flag)}"
         self.write("docs/PASS", "")
         git(self.repo, "add", "-A")
         git(self.repo, "commit", "-qm", "init")
@@ -39,17 +43,17 @@ class CliTest(unittest.TestCase):
             f.write(text)
 
     def fail_tests(self):
-        os.remove(os.path.join(self.repo, "docs", "PASS"))
+        os.remove(self.flag)
 
     def pass_tests(self):
-        self.write("docs/PASS", "")
+        open(self.flag, "w").close()
 
     def run_cli(self, *args, stdin=None):
         return subprocess.run([sys.executable, CLI, *args], cwd=self.repo, input=stdin,
                               capture_output=True, text=True, env=self.env)
 
     def init(self, preset="standard"):
-        out = self.run_cli("init", "--preset", preset, "--test-command", "test -f docs/PASS && echo ok || (echo FAILED; exit 1)")
+        out = self.run_cli("init", "--preset", preset, "--test-command", f"{self.suite} && echo ok || (echo FAILED; exit 1)")
         self.assertEqual(out.returncode, 0, out.stderr)
 
     def hook(self, event, **fields):
@@ -197,6 +201,27 @@ class CliTest(unittest.TestCase):
         self.write("app.py", "x = 3\n")
         self.assertEqual(self.hook("pre-tool", **commit).returncode, 2)
 
+    def test_a_pass_covers_exempt_files_and_the_test_command_too(self):
+        # Exempt files are not code, but a test can still read them.
+        self.init()
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "opt in")
+        self.assertEqual(self.run_cli("test").returncode, 0)
+        self.fail_tests()  # would fail if rerun
+        commit = dict(tool_name="Bash", tool_input={"command": "git commit -am docs"})
+        self.assertEqual(self.hook("pre-tool", **commit).returncode, 0)
+        self.write("README.md", "changed\n")
+        self.assertEqual(self.hook("stop").returncode, 0)  # the end-of-turn rule is about code
+        out = self.hook("pre-tool", **commit)
+        self.assertEqual(out.returncode, 2)
+        self.assertIn("FAILED", out.stderr)
+        # A new test command is a new suite: an old pass does not vouch for it.
+        self.write("README.md", "")
+        self.pass_tests()
+        self.assertEqual(self.run_cli("test").returncode, 0)
+        self.run_cli("config", "test_command", "echo FAILED; exit 1")
+        self.assertEqual(self.hook("pre-tool", **commit).returncode, 2)
+
     def test_the_test_command_needs_a_trusted_config(self):
         self.init()
         self.write(".supermatt/config.json", json.dumps({"test_command": "touch pwned"}))
@@ -275,13 +300,10 @@ class CliTest(unittest.TestCase):
         self.assertEqual(self.hook("stop").returncode, 2)
         self.pass_tests()
         self.assertEqual(self.hook("stop").returncode, 0)
-        green = self.state()["green"]
-        self.write("notes.md", "exempt\n")
-        self.assertEqual(self.state()["green"], green)
 
     def test_files_left_by_the_test_run_do_not_force_a_rerun(self):
         self.init()
-        self.run_cli("config", "test_command", "touch .coverage && test -f docs/PASS")
+        self.run_cli("config", "test_command", f"touch .coverage && {self.suite}")
         self.write("app.py", "x = 2\n")
         self.assertEqual(self.hook("stop").returncode, 0)
         self.fail_tests()  # would fail if rerun

@@ -442,17 +442,19 @@ def git_out(root, *args, stdin=None):
 
 
 def tree_fingerprint(config, root):
-    """Return (code, full, dirty) for the working tree as it stands.
+    """Return (fingerprint, dirty) for the working tree as it stands.
 
-    `code` hashes the non-exempt files, `full` every file, and `dirty` says whether a non-exempt file is
-    uncommitted. Blob ids come from the index for unchanged files and from `git hash-object` for changed
-    ones, so a tree has the same fingerprint just before a commit and just after it, and nothing is
-    written to the repo. Both hashes are None when git cannot give them; callers then run the tests.
+    `fingerprint` hashes every file git sees, exempt ones included: a test can read docs or markdown, so a
+    pass only vouches for the exact files it ran on. The pipeline's own state file is left out, because
+    supermatt rewrites it after every run. `dirty` says whether a non-exempt file is uncommitted. Blob ids
+    come from the index for unchanged files and from `git hash-object` for changed ones, so a tree has the
+    same fingerprint just before a commit and just after it, and nothing is written to the repo. The
+    fingerprint is None when git cannot give it; callers then run the tests.
     """
     listed = git_out(root, "ls-files", "-s", "-z")
     status = git_out(root, "status", "--porcelain", "-z", "--untracked-files=all")
     if listed is None or status is None:
-        return None, None, False
+        return None, False
     blobs = {}
     for entry in listed.split("\0"):
         meta, _, rel = entry.partition("\t")
@@ -469,6 +471,8 @@ def tree_fingerprint(config, root):
         if entry[0] in "RC":
             changed.append(fields[i])  # the rename source follows as its own field
             i += 1
+    blobs.pop(STATE, None)
+    changed = [rel for rel in changed if rel != STATE]
     to_hash = []
     for rel in changed:
         path = os.path.join(root, rel)
@@ -484,30 +488,27 @@ def tree_fingerprint(config, root):
         hashed = git_out(root, "hash-object", "--stdin-paths", stdin="\n".join(to_hash) + "\n")
         ids = hashed.split() if hashed is not None else []
         if len(ids) != len(to_hash):
-            return None, None, True
+            return None, True
         blobs.update(zip(to_hash, ids))
-    code, full = hashlib.sha256(), hashlib.sha256()
+    digest = hashlib.sha256()
     for rel in sorted(blobs):
-        line = f"{rel}\0{blobs[rel]}\0".encode("utf-8", "surrogateescape")
-        full.update(line)
-        if not exempt(config, rel):
-            code.update(line)
-    return code.hexdigest(), full.hexdigest(), any(not exempt(config, rel) for rel in changed)
+        digest.update(f"{rel}\0{blobs[rel]}\0".encode("utf-8", "surrogateescape"))
+    return digest.hexdigest(), any(not exempt(config, rel) for rel in changed)
 
 
 def ensure_green(config, root, state, force=False):
     """Run the tests unless these files already passed them. Return (passed, tail of output, ran)."""
     if not force:
-        code = tree_fingerprint(config, root)[0]
-        if code and code == state["green"]:
+        fingerprint = tree_fingerprint(config, root)[0]
+        if fingerprint and fingerprint == state["green"]:
             return True, "", False
     passed, tail = run_tests(config, root)
     # Fingerprint after the run: it may itself leave files behind (coverage, caches).
-    code, full, _ = tree_fingerprint(config, root)
+    fingerprint = tree_fingerprint(config, root)[0]
     if passed:
-        state["green"], state["red"] = code, None
+        state["green"], state["red"] = fingerprint, None
     else:
-        state["red"] = full
+        state["red"] = fingerprint
     return passed, tail, True
 
 
@@ -566,11 +567,11 @@ def hook_stop(event, root, config):
     level = enforce["green_before_stop"]
     # Mid-ticket red is part of test-first work; the commit rule guards the ticket's end.
     if level != "off" and config["test_command"] and active != "implementing":
-        code, full, dirty = tree_fingerprint(config, root)
-        if dirty and full and full == state["red"]:
+        fingerprint, dirty = tree_fingerprint(config, root)
+        if dirty and fingerprint and fingerprint == state["red"]:
             # Blocking again would only repeat the last turn: nothing has changed since that red run.
             warns.append("uncommitted changes still fail the tests (no file has changed since the last failing run).")
-        elif dirty and not (code and code == state["green"]):
+        elif dirty and not (fingerprint and fingerprint == state["green"]):
             passed, tail, _ = ensure_green(config, root, state, force=True)
             if not passed:
                 msg = f"uncommitted changes fail the tests.\n$ {config['test_command']}\n{tail}"

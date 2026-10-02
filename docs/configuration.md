@@ -45,7 +45,7 @@ This is the check that stops Claude from ending a turn with work unfinished.
 
 *Shown with `review_after_ticket` and `green_before_stop` at `block`. At `warn`, the turn ends with a warning to you instead of being blocked. Not shown: when the tests fail on exactly the files that failed at the last end of turn, the turn ends with a warning instead of a second block.*
 
-Once a set of files passes, nothing reruns the tests until the code changes again: not this check, not the commit rule, not `verify` or `finish`. The pipeline runs the suite through `supermatt test`, which shares that memory; `supermatt test --force` reruns regardless. If the same unchanged files fail twice in a row, the second end of turn warns you instead of blocking again.
+Once a set of files passes, nothing reruns the tests until a file changes again, docs and other exempt files included: not this check, not the commit rule, not `verify` or `finish`. The pipeline runs the suite through `supermatt test`, which shares that memory; `supermatt test --force` reruns regardless. If the same unchanged files fail twice in a row, the second end of turn warns you instead of blocking again.
 
 ## Pipeline and other options
 
@@ -53,7 +53,7 @@ Once a set of files passes, nothing reruns the tests until the code changes agai
 |---|---|---|
 | `test_command` | none | The command the guardrails and the verify stage run. Without one, the two test rules do nothing. |
 | `test_timeout` | `300` | Seconds before a test run counts as failed. At most 570, because Claude Code stops the commit and end-of-turn hooks after 600. |
-| `exempt` | `.scratch/*`, `docs/*`, `.supermatt/*`, `*.md` | Paths the code rules ignore |
+| `exempt` | `.scratch/*`, `docs/*`, `.supermatt/*`, `*.md` | Paths that `ticket_before_code` and `green_before_stop` treat as not code. A commit still runs the tests when only these change, because a test can read them. |
 | `pipeline.interview` | `full` | `full` waits for your answers during grilling. `auto` answers each question with the recommended answer and lists these as assumptions in the spec. |
 | `pipeline.pause_at` | `implement,finish` | The stages `run` pauses *before*, waiting for your go-ahead: any of `grill`, `spec`, `tickets`, `implement`, `verify`, `finish`. `none` never pauses. |
 | `pipeline.branch` | `true` | Create a branch named after the feature before implementing |
