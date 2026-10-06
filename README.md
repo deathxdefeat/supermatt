@@ -77,7 +77,7 @@ You describe a feature or a problem, and get working, tested, reviewed code thro
 | Your say | Whenever you interrupt | Two pauses by default: before any code, and before any merge |
 
 - **One order.** Six stages, always in the same sequence, so you never have to know which skill is next.
-- **Skills that start themselves.** Most start when your request fits. Four stay yours to type: `run`, `triage`, `wayfinder` and `handoff`.
+- **Skills that start themselves.** Most start when your request fits. Five stay yours to type: `run`, `triage`, `wayfinder`, `handoff` and `retro`.
 - **One skill set.** Matt Pocock's skills, three from Superpowers and four of supermatt's own, merged so they call each other by name and stop fighting over your repo.
 - **Light.** Checks run as hooks, a passing test adds nothing to the conversation, and every rule can be `off`, `warn` or `block`.
 
@@ -87,7 +87,7 @@ You describe a feature or a problem, and get working, tested, reviewed code thro
 
 | Stage | What happens |
 |---|---|
-| **grill** | Claude questions you in rounds, each question with a recommended answer, until the design is settled. Terms go into `CONTEXT.md`, hard-to-reverse decisions into `docs/adr/`. |
+| **grill** | Claude questions you in rounds, each question with a recommended answer, until the design is settled. Terms go into `GLOSSARY.md`, hard-to-reverse decisions into `docs/adr/`. |
 | **spec** | The conversation becomes a written spec in your issue tracker. |
 | **tickets** | The spec is split into thin slices that each work end to end, so each can be checked on its own. |
 | **implement** | One ticket at a time: failing test, just enough code to pass, commit, then a review against your coding standards and the ticket. |
@@ -127,7 +127,7 @@ It reads the repo (pipeline status, commits, specs, tickets, tests) without chan
 
 ## Skills
 
-All 21 are invoked as `/supermatt:<name>`. Seven are the pipeline's stages; the other fourteen stand on their own, and you can call any of them at any time without the pipeline. Claude starts most skills by itself when your request fits; the four marked * only run when you type them. [Full descriptions](docs/skills.md).
+All 22 are invoked as `/supermatt:<name>`. Seven are the pipeline's stages; the other fifteen stand on their own, and you can call any of them at any time without the pipeline. Claude starts most skills by itself when your request fits; the five marked * only run when you type them. [Full descriptions](docs/skills.md).
 
 ![The 21 supermatt skills in four groups: start here (run, advise, setup, status), the seven pipeline stages in order, seven on-demand skills Claude starts itself, and three on-demand skills only you can start](docs/images/skills.svg)
 
@@ -166,6 +166,7 @@ All 21 are invoked as `/supermatt:<name>`. Seven are the pipeline's stages; the 
 | `/supermatt:triage` * | Sorts incoming issues into briefs an agent can work from |
 | `/supermatt:wayfinder` * | Breaks a large, unclear effort into decisions, one at a time |
 | `/supermatt:handoff` * | Writes a handoff so a fresh session can continue |
+| `/supermatt:retro` * | Looks back at a session and suggests fixes to the agent's environment |
 <p align="right"><a href="#supermatt">↑ top</a></p>
 
 ## Guardrails

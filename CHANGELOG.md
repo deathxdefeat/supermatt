@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0
+
+Synced the skills adapted from mattpocock/skills with upstream `6fd9479` (v1.3.1 and later).
+
+- The glossary is now `GLOSSARY.md` (and `GLOSSARY-MAP.md` for several contexts), as upstream renamed it. A repo that still has `CONTEXT.md` keeps working: the skills read and update it in place and suggest a `git mv` once.
+- New `/supermatt:retro` (you type it): looks back at a session and suggests changes to the agent's environment, most severe first. `advise` puts it at the end of the main path and after `debug`; `run` mentions it when a feature is done.
+- `finish` writes pull request bodies with a summary visual, before/after evidence and a merge-danger call, unless the repo has its own PR template.
+- GitHub trackers: tickets made from an existing issue become its sub-issues; the "Blocked by" section is left out when native blocking links were set; external PRs for triage are listed through the REST pulls endpoint.
+- `handoff` names the temp directory it uses: `$TMPDIR`, else `/tmp`, or `%TEMP%` on Windows.
+
 ## 0.5.2
 
 - A remembered pass now vouches only for exactly the files and test command it ran on. It used to ignore `exempt` paths (`*.md`, `docs/*`, `.supermatt/*` and `.scratch/*` by default), executable bits, and a submodule or nested repository changing a second time, and it kept counting after `test_command` changed. So a commit could skip the suite on files the suite never saw. Commits that touch only docs now run the suite, and so does `verify` after a local tracker's ticket file changes; the end-of-turn check still runs only while code is uncommitted.

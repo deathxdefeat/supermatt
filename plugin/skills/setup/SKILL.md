@@ -9,7 +9,7 @@ Scaffold the per-repo configuration that the supermatt skills assume:
 
 - **Issue tracker**: where issues live (GitHub by default; local markdown is also supported out of the box)
 - **Triage labels**: the strings used for the five canonical triage roles
-- **Domain docs**: where `CONTEXT.md` and ADRs live, and the consumer rules for reading them
+- **Domain docs**: where `GLOSSARY.md` and ADRs live, and the consumer rules for reading them
 - **supermatt options** in `.supermatt/config.json`: the test command, which enforcement rules are on, and how `/supermatt:run` behaves
 
 This is a prompt-driven skill, not a deterministic script. Explore, present what you found, confirm with the user, then write.
@@ -22,7 +22,7 @@ Look at the current repo to understand its starting state. Read whatever exists;
 
 - `git remote -v` and `.git/config`: is this a GitHub repo? Which one?
 - `AGENTS.md` and `CLAUDE.md` at the repo root: does either exist? Is there already an `## Agent skills` section in either?
-- `CONTEXT.md` and `CONTEXT-MAP.md` at the repo root
+- `GLOSSARY.md` and `GLOSSARY-MAP.md` at the repo root, or a legacy `CONTEXT.md`/`CONTEXT-MAP.md` (keep using it; offer the `git mv` to the new name)
 - `docs/adr/` and any `src/*/docs/adr/` directories
 - `docs/agents/`: does this skill's prior output already exist?
 - `.scratch/`: a sign that a local-markdown issue tracker convention is already in use
@@ -57,9 +57,9 @@ Record the choice in `docs/agents/issue-tracker.md`. The GitHub and GitLab templ
 
 The defaults are the five canonical roles, each label string equal to its name: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. On **yes**, write them as-is. Only if the user says no, usually because their tracker already uses other names (e.g. `bug:triage` for `needs-triage`), collect the overrides so `supermatt:triage` applies existing labels instead of creating duplicates.
 
-**Section C: Domain docs.** Default to **single-context** (one `CONTEXT.md` + `docs/adr/` at the repo root). This fits almost every repo; write it without asking.
+**Section C: Domain docs.** Default to **single-context** (one `GLOSSARY.md` + `docs/adr/` at the repo root). This fits almost every repo; write it without asking.
 
-Offer **multi-context** (a root `CONTEXT-MAP.md` pointing to per-context `CONTEXT.md` files) only when exploration found monorepo signals. Then confirm which layout they want.
+Offer **multi-context** (a root `GLOSSARY-MAP.md` pointing to per-context `GLOSSARY.md` files) only when exploration found monorepo signals. Then confirm which layout they want.
 
 **Section D: Test command.** Propose the command you confirmed in exploration. Check that it tests the current source, not a stale artifact: an end-to-end suite that serves a production build (for example Playwright starting `next start`) needs the build step in the command (`npm run build && npm run test:e2e`). Time the confirming run: the command must finish within `test_timeout`. The default is 300 seconds; set it higher with `supermatt config test_timeout <seconds>` (at most 570) when the run needs more, leaving some headroom. Run it a second time if that's affordable: a result that changes between runs means a flaky test. Name it to the user, because `tests_before_commit` will block commits at random until it's fixed. Make sure the command covers the level the repo's work is checked at: if the repo has browser or end-to-end tests for its main flows, include them (or the relevant subset) when they fit the time limit, rather than unit tests alone. It is what the enforcement rules and the `verify` stage run. If the repo has no tests yet, record none: the test rules then stay quiet until one is set with `supermatt config test_command "<cmd>"`.
 

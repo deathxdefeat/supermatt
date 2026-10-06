@@ -40,7 +40,7 @@ Pauses happen only between stages, once each. There is no pause between tickets 
 
 ## 1. grill
 
-Call the Skill tool with "supermatt:grill", passing the feature description, plus `--auto` when the effective `interview` is `auto`. Grilling keeps `CONTEXT.md` and ADRs current as terms and decisions settle. If a question can only be settled by running something, detour through `/supermatt:prototype` for that one question and bring the answer back as a decision; the prototype does not change product code.
+Call the Skill tool with "supermatt:grill", passing the feature description, plus `--auto` when the effective `interview` is `auto`. Grilling keeps `GLOSSARY.md` and ADRs current as terms and decisions settle. If a question can only be settled by running something, detour through `/supermatt:prototype` for that one question and bring the answer back as a decision; the prototype does not change product code.
 
 Keep the grill, spec and tickets stages in one unbroken context: the spec and tickets build on the grilling.
 
@@ -86,4 +86,4 @@ The enforcement hooks back this loop up when they are on: commits run the tests 
 
 ## Reporting
 
-At the end (or at a pause), report in a few lines: the feature, the stage reached, tickets done, the verify result with its evidence, and how the work was integrated. Name anything assumed rather than decided by the user.
+At the end (or at a pause), report in a few lines: the feature, the stage reached, tickets done, the verify result with its evidence, and how the work was integrated. Name anything assumed rather than decided by the user. When the run reaches `done`, and especially when it went sideways, tell the user they can type `/supermatt:retro` before clearing the session.

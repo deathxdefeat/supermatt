@@ -1,6 +1,6 @@
 ---
 name: grill
-description: Grill the user relentlessly about a plan, decision, or idea until you share one understanding, recording glossary terms in CONTEXT.md and decisions as ADRs as they settle. Use when the user wants to stress-test their thinking, sharpen a feature before building it, or says "grill me", "stress-test this" or "poke holes in this".
+description: Grill the user relentlessly about a plan, decision, or idea until you share one understanding, recording glossary terms in GLOSSARY.md and decisions as ADRs as they settle. Use when the user wants to stress-test their thinking, sharpen a feature before building it, or says "grill me", "stress-test this" or "poke holes in this".
 argument-hint: "[--no-docs] [--auto] <what to grill>"
 ---
 
@@ -10,7 +10,7 @@ Interview the user relentlessly until you reach a shared understanding. Map this
 
 ## Modes
 
-- **Docs mode (default in a working directory).** Run the interview and, as you go, keep the domain model current by following [DOMAIN-MODELING.md](DOMAIN-MODELING.md): challenge terms against `CONTEXT.md`, write resolved terms into it the moment they settle ([CONTEXT-FORMAT.md](CONTEXT-FORMAT.md)), and record hard-to-reverse decisions as ADRs ([ADR-FORMAT.md](ADR-FORMAT.md)).
+- **Docs mode (default in a working directory).** Run the interview and, as you go, keep the domain model current by following [DOMAIN-MODELING.md](DOMAIN-MODELING.md): challenge terms against `GLOSSARY.md`, write resolved terms into it the moment they settle ([GLOSSARY-FORMAT.md](GLOSSARY-FORMAT.md)), and record hard-to-reverse decisions as ADRs ([ADR-FORMAT.md](ADR-FORMAT.md)).
 - **`--no-docs`, or no working directory.** The same interview, stateless: write nothing.
 - **`--auto`** (set by `/supermatt:run` when `pipeline.interview` is `auto`). Do not wait for answers. Work the tree yourself: settle every decision with your recommended answer, grounded in the code and docs, and mark each one **assumed**. Write the assumed decisions to the conversation as one numbered list so the spec can carry them and the user can overturn any of them later. Docs mode still applies.
 

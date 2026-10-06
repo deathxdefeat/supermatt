@@ -6,12 +6,13 @@ The map `/supermatt:advise` routes over.
 
 **`/supermatt:run <feature>`** does the whole thing and remembers where it is. When the thinking already happened elsewhere (an audit, a plan, a spec or tickets), `--from spec|tickets|implement|verify` starts it at that stage so it still tracks progress. The stages it drives can also be run by hand:
 
-1. **`/supermatt:grill`** sharpens the idea by interview, writing `CONTEXT.md` terms and ADRs as they settle (`--no-docs` for a stateless interview, `--auto` to settle questions itself).
+1. **`/supermatt:grill`** sharpens the idea by interview, writing `GLOSSARY.md` terms and ADRs as they settle (`--no-docs` for a stateless interview, `--auto` to settle questions itself).
 2. **`/supermatt:spec`** turns the conversation into a spec on the tracker.
 3. **`/supermatt:tickets`** splits it into tracer-bullet tickets with blocking edges.
 4. **`/supermatt:implement`** builds one ticket test-first, commits, and hands to **`/supermatt:review`** (Standards + Spec, two parallel reviewers), which fixes findings and closes the ticket.
 5. **`/supermatt:verify`**: fresh evidence before any claim of done.
-6. **`/supermatt:finish`**: merge, pull request, or keep the branch.
+6. **`/supermatt:finish`**: merge, pull request, or keep the branch. A pull request body gets the smallest visual that shows the change, before/after evidence, and a one-way or two-way door call.
+7. **`/supermatt:retro`** closes the loop. After a build, and especially one that went sideways, it looks back over the session and suggests changes to the agent's **environment**, not the code: navigation pointers, automated checks, the coding standards `/supermatt:review` enforces, steering files, tooling. Run it in the session it looks back on, before `/clear`.
 
 Not a multi-session build? Skip 2 and 3: `/supermatt:implement` straight from the conversation.
 
@@ -20,7 +21,7 @@ Keep stages 1 to 3 in one context window. Each ticket can start fresh (`pipeline
 ## On-ramps
 
 - **Issues piling up** that you didn't write → **`/supermatt:triage`**, which produces agent-ready issues for `/supermatt:implement`. Never triage tickets `/supermatt:tickets` made.
-- **Something broken, flaky or slow** → **`/supermatt:debug`**: builds a tight red feedback loop before theorising, then fixes with a regression test.
+- **Something broken, flaky or slow** → **`/supermatt:debug`**: builds a tight red feedback loop before theorising, then fixes with a regression test. Once the fix is in, **`/supermatt:retro`** in the same session asks what would have prevented the bug; where the finding is that no good seam exists to lock it down, that's **`/supermatt:architecture`**.
 - **A huge, foggy effort** too big for one session → **`/supermatt:wayfinder`**: a map of decision tickets resolved one at a time; when it clears, merge onto the main path at `/supermatt:spec`.
 
 ## Standalone

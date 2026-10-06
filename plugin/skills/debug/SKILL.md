@@ -9,7 +9,7 @@ A discipline for hard bugs. Skip phases only when explicitly justified.
 
 When the repo is opted in to supermatt, track the fix as a ticket before editing code: `"${CLAUDE_PLUGIN_ROOT}/bin/supermatt" ticket fix-<short-name> implementing`. It goes through `/supermatt:review` like any ticket, and red tests mid-ticket do not block your turn.
 
-When exploring the codebase, read `CONTEXT.md` (if it exists) to get a clear mental model of the relevant modules, and check ADRs in the area you're touching.
+When exploring the codebase, read `GLOSSARY.md` (if it exists) to get a clear mental model of the relevant modules, and check ADRs in the area you're touching.
 
 ## Redact
 

@@ -29,7 +29,7 @@ use placeholders (`~`, `you@example.com`).
 
 supermatt is a Claude Code plugin (`plugin/`): a fused skill set invoked as
 `/supermatt:<name>`, a resumable pipeline (`/supermatt:run`), and enforcement
-hooks that act only in repos with `.supermatt/config.json`. See `CONTEXT.md`
+hooks that act only in repos with `.supermatt/config.json`. See `GLOSSARY.md`
 for terms and `docs/adr/0001-supermatt-is-a-plugin-that-owns-its-skills.md`
 for why.
 
@@ -91,4 +91,4 @@ Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-
 
 ### Domain docs
 
-Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
