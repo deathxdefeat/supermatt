@@ -31,7 +31,7 @@ Three skills look at the same work from different sides, and none replaces anoth
 2. **The authority**: what the user approved. Read the real text, never a summary of it. Strongest first:
    - the user's own messages in this conversation, word for word, including every limit they name (which files, how many, which branch, which tickets);
    - the user's standing instruction files (`AGENTS.md`, `CLAUDE.md`, global agreements);
-   - ADRs in `docs/adr/` and the terms in `CONTEXT.md`;
+   - ADRs in `docs/adr/` and the terms in `GLOSSARY.md`;
    - the approved spec and the tickets' acceptance criteria and "Out of Scope" sections, found through `docs/agents/issue-tracker.md` (locally `.scratch/<slug>/`);
    - the repo's committed `.supermatt/config.json`: its enforcement rules, `pause_at` and `finish` are choices the user made;
    - the tracker and `SM status`, as evidence of what is open, not as authority to close it.
@@ -49,7 +49,7 @@ Until the user rules, this skill is read-only apart from step 0.
 0. **Mid-run only: freeze first.** Stop adding work. Stop background jobs that keep producing output. Undo nothing. If a ticket is open, record `SM ticket <id> blocked`, so the stop checks let the turn end while you wait for the ruling. Then read where the work stands from the live repo: `SM status` for the feature, stage, tickets and base branch; `git status` for what is uncommitted; `git log <base>..HEAD --oneline` and `git diff <base>...HEAD` for what is committed; whether it is pushed or merged; whether anything outside the feature's own area changed. With no base recorded, use the commit the approved work started from.
 1. **Break the artifact into line items.** One per work item, rule, state claim, grant of discretion, or default the artifact sets. Rules and stop conditions count, not just tasks. Mid-run, write one item per change the user would notice, not one per file; group changes that would get the same ruling, and aim for fifteen items or fewer. Read the diff itself: a commit message or an agent's report says what was intended, not what was done.
 2. **Trace each item to authority.** Find the sentence that authorizes it and note the source. Check state claims (branch, ticket states, what shipped) against the live repo where that is one cheap command; trust the live repo over any document.
-3. **Check that the authority itself held still.** `git log` the spec, the tickets, ADRs, `CONTEXT.md` and `.supermatt/config.json` since the approval. A spec or option edited by an agent after the user approved it is not approval: the earlier text governs, and the edit is itself a line item.
+3. **Check that the authority itself held still.** `git log` the spec, the tickets, ADRs, `GLOSSARY.md` and `.supermatt/config.json` since the approval. A spec or option edited by an agent after the user approved it is not approval: the earlier text governs, and the edit is itself a line item.
 4. **Classify each item** as exactly one of:
    - **Traced**: a named source authorizes it, or it faithfully carries out an approved document. Closing in-spec open items is traced, not drift. So are the tests, commits and reviews the pipeline itself requires.
    - **Against**: doing it would make an approved document false. It contradicts a gate, a sequence, a constraint, a decision or an ownership boundary; or it acts in the user's name (accepts an ADR, closes a `needs-info` ticket, relaxes an enforcement rule, skips a `pause_at` pause); or it edits an authority document so that drift stops looking like drift.

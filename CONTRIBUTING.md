@@ -27,12 +27,12 @@ The tests drive `plugin/bin/supermatt` the way the hooks call it, in temporary g
 |---|---|
 | `plugin/.claude-plugin/plugin.json` | The plugin manifest |
 | `.claude-plugin/marketplace.json` | The marketplace entry that makes `supermatt@supermatt` installable |
-| `plugin/skills/<name>/` | The 21 skills. `run`, `status` and `drift` are original, and so is `advise` apart from its skills map; the rest are adapted from the source skills (see `plugin/NOTICE.md`). |
+| `plugin/skills/<name>/` | The 22 skills. `run`, `status` and `drift` are original, and so is `advise` apart from its skills map; the rest are adapted from the source skills (see `plugin/NOTICE.md`). |
 | `plugin/bin/supermatt` | The command that holds options, pipeline state and the hook logic |
 | `plugin/hooks/hooks.json` | The PreToolUse, Stop and SessionStart hooks, all calling `supermatt hook` |
 | `tests/` | The unit tests |
 | `docs/pipeline.md`, `docs/skills.md`, `docs/configuration.md`, `docs/security.md`, `docs/cli.md`, `docs/troubleshooting.md` | The reference docs the README links to |
-| `CONTEXT.md`, `docs/adr/` | Project terms and design decisions |
+| `GLOSSARY.md`, `docs/adr/` | Project terms and design decisions |
 
 ## Diagrams
 

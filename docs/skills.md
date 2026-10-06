@@ -10,14 +10,14 @@ Describe your situation in your own words:
 /supermatt:advise the export has been "fixed" three times and still writes an empty file
 ```
 
-`/supermatt:advise` reads what you wrote, then checks the repo itself: the pipeline status, recent commits, open specs and tickets, `CONTEXT.md` and ADRs, and the tests (it runs them once if that is cheap). It makes no edits, commits or stage changes. Its answer has four parts:
+`/supermatt:advise` reads what you wrote, then checks the repo itself: the pipeline status, recent commits, open specs and tickets, `GLOSSARY.md` and ADRs, and the tests (it runs them once if that is cheap). It makes no edits, commits or stage changes. Its answer has four parts:
 
 1. **What this is**: the kind of situation, with the evidence, including anything the repo showed that you did not mention.
 2. **The plan**: numbered steps, each with the exact command, why it comes at that point, and what finished looks like.
 3. **What to watch for**: the one or two ways the plan is most likely to go wrong.
 4. **Start here**: the first command to type.
 
-Tell it to go and it starts step 1 itself. The exceptions are the four skills only you can start (`run`, `triage`, `wayfinder` and `handoff`): for those, it tells you what to type.
+Tell it to go and it starts step 1 itself. The exceptions are the five skills only you can start (`run`, `triage`, `wayfinder`, `handoff` and `retro`): for those, it tells you what to type.
 
 | Situation | Starts with |
 |---|---|
@@ -34,11 +34,11 @@ Tell it to go and it starts step 1 itself. The exceptions are the four skills on
 | Work that may have grown past what you approved | `/supermatt:drift` |
 | A feature already in flight | `/supermatt:run` to resume |
 
-## All 21 skills
+## All 22 skills
 
-![The 21 supermatt skills in four groups: start here, the seven pipeline stages in order, seven on-demand skills Claude starts itself, and three on-demand skills only you can start](images/skills.svg)
+![The 22 supermatt skills in four groups: start here, the seven pipeline stages in order, seven on-demand skills Claude starts itself, and four on-demand skills only you can start](images/skills.svg)
 
-All 21 skills are invoked as `/supermatt:<name>`. Where skills from the two source collections (Matt Pocock's and obra/superpowers) overlapped, they were merged into one, and the skills call each other by these names. Claude also starts a skill by itself when your request fits, except the four marked *(you type it)*.
+All 22 skills are invoked as `/supermatt:<name>`. Where skills from the two source collections (Matt Pocock's and obra/superpowers) overlapped, they were merged into one, and the skills call each other by these names. Claude also starts a skill by itself when your request fits, except the five marked *(you type it)*.
 
 **Driving the workflow**
 
@@ -53,13 +53,13 @@ All 21 skills are invoked as `/supermatt:<name>`. Where skills from the two sour
 
 | Skill | What it does |
 |---|---|
-| `/supermatt:grill` | Questions you in rounds until the design is clear, writing `CONTEXT.md` terms and ADRs as they are decided |
+| `/supermatt:grill` | Questions you in rounds until the design is clear, writing `GLOSSARY.md` terms and ADRs as they are decided |
 | `/supermatt:spec` | Turns the conversation into a spec in your issue tracker, without a new interview |
 | `/supermatt:tickets` | Splits a spec into tracer-bullet tickets, each listing what blocks it |
 | `/supermatt:implement` | Builds a ticket, a spec or a described behaviour test-first, commits it, and hands it to review |
 | `/supermatt:review` | Reviews against your coding standards and against the spec, in parallel, then fixes the findings and closes the ticket |
 | `/supermatt:verify` | Requires evidence from the current files before anything is called done |
-| `/supermatt:finish` | Runs the full test suite, then merges, opens a pull request, or keeps the branch |
+| `/supermatt:finish` | Runs the full test suite, then merges, opens a pull request (summary visual, before/after evidence, merge danger), or keeps the branch |
 
 **On demand**
 
@@ -75,3 +75,4 @@ All 21 skills are invoked as `/supermatt:<name>`. Where skills from the two sour
 | `/supermatt:drift` | Checks a spec, tickets, plan or work in progress against what you actually approved, lists each departure as *against* or *beyond* what you approved, and changes nothing until you rule |
 | `/supermatt:worktree` | Sets up an isolated workspace, such as a separate git worktree, for feature work |
 | `/supermatt:handoff` *(you type it)* | Writes a handoff document so a fresh session can pick up the work |
+| `/supermatt:retro` *(you type it)* | Looks back at a session and suggests changes to the agent's environment (navigation pointers, automated checks, coding standards, steering files, tooling), most severe first |

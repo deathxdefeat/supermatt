@@ -21,7 +21,7 @@ Ground the advice in the repo, not in the description alone:
 - `SM status`: is the repo set up and its config trusted, which preset, is a feature in flight and at which stage?
 - `git status`, `git log --oneline -15`: what changed recently, and how much churn is there on the same area?
 - The tracker (`docs/agents/issue-tracker.md` says where): open specs and tickets, and their states.
-- `CONTEXT.md` and `docs/adr/`: does the design the user describes exist on paper?
+- `GLOSSARY.md` and `docs/adr/`: does the design the user describes exist on paper?
 - **The tests, as a guardrail.** Is there a test command (`SM status`, or what setup would pick)? For it to back the plan, check four things:
   - **Coverage.** Does it run the kind of test the plan's outcomes need? Browser-level outcomes need the browser tests in the command, not just unit tests or lint.
   - **Freshness.** Does it test the current source? An end-to-end suite that serves a production build (`next start`, `vite preview`) needs the build step in the command.
@@ -112,4 +112,4 @@ Recommend one plan, not a menu. Mention an alternative only when the choice genu
 
 ## 5. Stop
 
-End with the plan. If the user says go, start at step 1: call the Skill tool for the skill it names, except `run`, `triage`, `wayfinder` and `handoff`, which only the user can start; for those, tell the user the exact command to type.
+End with the plan. If the user says go, start at step 1: call the Skill tool for the skill it names, except `run`, `triage`, `wayfinder`, `handoff` and `retro`, which only the user can start; for those, tell the user the exact command to type.
