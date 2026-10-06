@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "The 21 supermatt skills",
+    "title": "The 22 supermatt skills",
     "locale": "en",
     "quality_profile": "showcase",
     "legend": {
@@ -304,6 +304,20 @@
         124,
         60
       ]
+    },
+    {
+      "id": "retro",
+      "type": "security",
+      "label": "retro",
+      "sublabel": "fix the environment",
+      "pos": [
+        496,
+        590
+      ],
+      "size": [
+        124,
+        60
+      ]
     }
   ],
   "boundaries": [
@@ -349,7 +363,8 @@
       "wraps": [
         "triage",
         "wayfinder",
-        "handoff"
+        "handoff",
+        "retro"
       ]
     }
   ],

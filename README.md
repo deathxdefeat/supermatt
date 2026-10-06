@@ -129,7 +129,7 @@ It reads the repo (pipeline status, commits, specs, tickets, tests) without chan
 
 All 22 are invoked as `/supermatt:<name>`. Seven are the pipeline's stages; the other fifteen stand on their own, and you can call any of them at any time without the pipeline. Claude starts most skills by itself when your request fits; the five marked * only run when you type them. [Full descriptions](docs/skills.md).
 
-![The 21 supermatt skills in four groups: start here (run, advise, setup, status), the seven pipeline stages in order, seven on-demand skills Claude starts itself, and three on-demand skills only you can start](docs/images/skills.svg)
+![The 22 supermatt skills in four groups: start here (run, advise, setup, status), the seven pipeline stages in order, seven on-demand skills Claude starts itself, and four on-demand skills only you can start](docs/images/skills.svg)
 
 **Start here**
 
