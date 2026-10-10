@@ -171,6 +171,49 @@ class CliTest(unittest.TestCase):
         self.assertEqual(out.returncode, 2)
         self.assertIn("FAILED", out.stderr)
 
+    def test_a_failing_turbo_run_reports_only_the_failing_task_and_its_first_error(self):
+        noise = "".join(f"@acme/db:test: noisy line {i}\\n" for i in range(60))
+        report = (
+            noise
+            + "@acme/api:typecheck: src/a.ts(3,1): error TS2339: no property n\\n"
+            + "@acme/api:typecheck: [ELIFECYCLE] Command failed with exit code 2.\\n"
+            + "\\n Tasks:    1 successful, 2 total\\nFailed:    @acme/api#typecheck\\n"
+        )
+        self.write("suite.sh", f"printf '{report}'\nexit 1\n")
+        out = self.run_cli("init", "--test-command", "sh suite.sh")
+        self.assertEqual(out.returncode, 0, out.stderr)
+        out = self.hook("pre-tool", tool_name="Bash", tool_input={"command": "git commit -m wip"})
+        self.assertEqual(out.returncode, 2)
+        self.assertIn("failing: @acme/api#typecheck", out.stderr)
+        self.assertIn("error TS2339: no property n", out.stderr)
+        self.assertNotIn("noisy line", out.stderr)
+        self.assertNotIn("ELIFECYCLE", out.stderr)
+
+    def test_a_turbo_run_without_log_prefixes_falls_back_to_the_tail(self):
+        report = "src/a.ts(3,1): error TS2339: no property n\\n\\nFailed:    @acme/api#typecheck\\n"
+        self.write("suite.sh", f"printf '{report}'\nexit 1\n")
+        out = self.run_cli("init", "--test-command", "sh suite.sh")
+        self.assertEqual(out.returncode, 0, out.stderr)
+        out = self.hook("pre-tool", tool_name="Bash", tool_input={"command": "git commit -m wip"})
+        self.assertEqual(out.returncode, 2)
+        self.assertIn("error TS2339: no property n", out.stderr)
+
+    def test_comma_separated_turbo_failures_are_each_reported(self):
+        report = (
+            "@acme/api:test: AssertionError: expected 1 to be 2\\n"
+            "@acme/web:lint: error no-unused-vars\\n"
+            + "".join(f"@acme/db:test: noisy line {i}\\n" for i in range(40))
+            + "\\nFailed:    @acme/api#test, @acme/web#lint\\n"
+        )
+        self.write("suite.sh", f"printf '{report}'\nexit 1\n")
+        out = self.run_cli("init", "--test-command", "sh suite.sh")
+        self.assertEqual(out.returncode, 0, out.stderr)
+        out = self.hook("pre-tool", tool_name="Bash", tool_input={"command": "git commit -m wip"})
+        self.assertIn("failing: @acme/api#test, @acme/web#lint", out.stderr)
+        self.assertIn("expected 1 to be 2", out.stderr)
+        self.assertIn("error no-unused-vars", out.stderr)
+        self.assertNotIn("noisy line", out.stderr)
+
     def test_commit_passes_when_tests_pass_and_other_commands_are_ignored(self):
         self.init()
         out = self.hook("pre-tool", tool_name="Bash", tool_input={"command": "git -C . commit -m ok"})
