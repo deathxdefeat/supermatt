@@ -189,6 +189,15 @@ class CliTest(unittest.TestCase):
         self.assertNotIn("noisy line", out.stderr)
         self.assertNotIn("ELIFECYCLE", out.stderr)
 
+    def test_a_turbo_run_without_log_prefixes_falls_back_to_the_tail(self):
+        report = "src/a.ts(3,1): error TS2339: no property n\\n\\nFailed:    @acme/api#typecheck\\n"
+        self.write("suite.sh", f"printf '{report}'\nexit 1\n")
+        out = self.run_cli("init", "--test-command", "sh suite.sh")
+        self.assertEqual(out.returncode, 0, out.stderr)
+        out = self.hook("pre-tool", tool_name="Bash", tool_input={"command": "git commit -m wip"})
+        self.assertEqual(out.returncode, 2)
+        self.assertIn("error TS2339: no property n", out.stderr)
+
     def test_commit_passes_when_tests_pass_and_other_commands_are_ignored(self):
         self.init()
         out = self.hook("pre-tool", tool_name="Bash", tool_input={"command": "git -C . commit -m ok"})

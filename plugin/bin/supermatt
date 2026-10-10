@@ -458,13 +458,17 @@ def failure_summary(text, context=12):
     if not failed:
         return None
     out = [f"failing: {', '.join(failed)}"]
+    found = False
     for task in failed:
         package, _, name = task.partition("#")
         prefix = f"{package}:{name}: "
         own = [l[len(prefix):] for l in lines if l.startswith(prefix) and "ELIFECYCLE" not in l]
+        found = found or bool(own)
         start = next((i for i, l in enumerate(own) if ERROR_LINE.search(l)), max(0, len(own) - context))
         out += [f"--- {task}", *own[start:start + context]]
-    return "\n".join(out)
+    # Without task prefixes (`--log-prefix=none`) there is nothing to pick out:
+    # the caller falls back to the tail, which still holds the error.
+    return "\n".join(out) if found else None
 
 
 def git_out(root, *args, stdin=None):
