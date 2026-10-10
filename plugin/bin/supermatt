@@ -439,7 +439,8 @@ def run_tests(config, root):
 
 
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
-TURBO_FAILED = re.compile(r"^\s*(?:Failed:\s+)?(\S+#\S+)\s*$")
+TURBO_TASK = re.compile(r"[^\s,]+#[^\s,]+")
+TASK_LIST = re.compile(r"^\s*(?:[^\s,]+#[^\s,]+\s*,?\s*)+$")
 ERROR_LINE = re.compile(r"error|fail|×|✗|expected|received|assert", re.I)
 
 
@@ -449,11 +450,12 @@ def failure_summary(text, context=12):
     failed = []
     for i, line in enumerate(lines):
         if line.strip().startswith("Failed:"):
-            for follow in lines[i:]:
-                m = TURBO_FAILED.match(follow)
-                if not m:
+            # One task per line, or several comma-separated (`--continue=always`).
+            failed = TURBO_TASK.findall(line.strip()[len("Failed:"):])
+            for follow in lines[i + 1:]:
+                if not TASK_LIST.match(follow):
                     break
-                failed.append(m.group(1))
+                failed += TURBO_TASK.findall(follow)
             break
     if not failed:
         return None
