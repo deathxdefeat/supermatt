@@ -432,8 +432,39 @@ def run_tests(config, root):
                              text=True, timeout=config["test_timeout"])
     except subprocess.TimeoutExpired:
         return False, f"timed out after {config['test_timeout']}s"
-    tail = "\n".join((out.stdout + out.stderr).strip().splitlines()[-30:])
-    return out.returncode == 0, tail
+    text = ANSI.sub("", out.stdout + out.stderr)
+    if out.returncode == 0:
+        return True, "\n".join(text.strip().splitlines()[-30:])
+    return False, failure_summary(text) or "\n".join(text.strip().splitlines()[-30:])
+
+
+ANSI = re.compile(r"\x1b\[[0-9;]*m")
+TURBO_FAILED = re.compile(r"^\s*(?:Failed:\s+)?(\S+#\S+)\s*$")
+ERROR_LINE = re.compile(r"error|fail|×|✗|expected|received|assert", re.I)
+
+
+def failure_summary(text, context=12):
+    """A turbo run's failing tasks and the first error lines of each, or None for other output."""
+    lines = text.strip().splitlines()
+    failed = []
+    for i, line in enumerate(lines):
+        if line.strip().startswith("Failed:"):
+            for follow in lines[i:]:
+                m = TURBO_FAILED.match(follow)
+                if not m:
+                    break
+                failed.append(m.group(1))
+            break
+    if not failed:
+        return None
+    out = [f"failing: {', '.join(failed)}"]
+    for task in failed:
+        package, _, name = task.partition("#")
+        prefix = f"{package}:{name}: "
+        own = [l[len(prefix):] for l in lines if l.startswith(prefix) and "ELIFECYCLE" not in l]
+        start = next((i for i, l in enumerate(own) if ERROR_LINE.search(l)), max(0, len(own) - context))
+        out += [f"--- {task}", *own[start:start + context]]
+    return "\n".join(out)
 
 
 def git_out(root, *args, stdin=None):

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1
+
+- A red commit or stop now reports only what failed. When the test command is a turbo run, the hook names the failing tasks (`failing: @app/api#typecheck`) and shows each one's first error lines instead of the last 30 lines of the whole log, which were mostly other packages' passing output. Other test commands still get the last 30 lines.
+
 ## 0.6.0
 
 Synced the skills adapted from mattpocock/skills with upstream `6fd9479` (v1.3.1 and later).
